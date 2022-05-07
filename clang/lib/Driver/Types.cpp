@@ -154,6 +154,9 @@ bool types::isAcceptedByClang(ID Id) {
   case TY_CXXModule: case TY_PP_CXXModule:
   case TY_AST: case TY_ModuleFile: case TY_PCH:
   case TY_LLVM_IR: case TY_LLVM_BC:
+//EG BEGIN
+  case TY_EG_CXX: case TY_PP_EG_CXX:
+//EG END
   case TY_API_INFO:
     return true;
   }
@@ -245,6 +248,9 @@ bool types::isCXX(ID Id) {
   case TY_HIP:
   case TY_PP_HIP:
   case TY_HIP_DEVICE:
+//EG BEGIN
+  case TY_EG_CXX: case TY_PP_EG_CXX:
+//EG END
     return true;
   }
 }
@@ -353,6 +359,10 @@ types::ID types::lookupTypeForExtension(llvm::StringRef Ext) {
            .Case("cppm", TY_CXXModule)
            .Case("cxxm", TY_CXXModule)
            .Case("hlsl", TY_HLSL)
+//EG BEGIN
+           .Case("egcpp", TY_EG_CXX)
+           .Case("egcppi", TY_PP_EG_CXX)
+//EG END
            .Default(TY_INVALID);
 }
 

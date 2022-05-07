@@ -29,6 +29,7 @@ clang_target_link_libraries(clangIncludeFixer
   clangSerialization
   clangTooling
   clangToolingCore
+  clangEG
   )
 
 add_subdirectory(plugin)

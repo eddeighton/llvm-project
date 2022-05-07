@@ -21,6 +21,7 @@ clang_target_link_libraries(ClangAnalysisTests
   clangLex
   clangSerialization
   clangTooling
+  clangEG
   )
 
 target_link_libraries(ClangAnalysisTests

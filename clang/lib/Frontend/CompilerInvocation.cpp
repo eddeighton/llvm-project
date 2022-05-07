@@ -2698,6 +2698,22 @@ static bool ParseFrontendArgs(FrontendOptions &Opts, ArgList &Args,
 #include "clang/Driver/Options.inc"
 #undef FRONTEND_OPTION_WITH_MARSHALLING
 
+//EG BEGIN
+  //get the eg options
+  Opts.EGPluginDllPath = Args.getLastArgValue( OPT_egdll );
+  Opts.EGDatabasePath = Args.getLastArgValue( OPT_egdb );
+  Opts.EGCXXFile = Args.getLastArgValue( OPT_egcxx );
+  Opts.EGTranslationUnitDatabasePath = Args.getLastArgValue( OPT_egtu );
+  {
+      const std::string strTUID = Args.getLastArgValue( OPT_egtuid );
+      if( !strTUID.empty() )
+      {
+          //check for std::invalid_argument and std::out_of_range here
+        Opts.EGTranslationUnitID = std::stoi( strTUID );
+      }
+  }
+//EG END
+
   Opts.ProgramAction = frontend::ParseSyntaxOnly;
   if (const Arg *A = Args.getLastArg(OPT_Action_Group)) {
     OptSpecifier Opt = OptSpecifier(A->getOption().getID());
@@ -2857,6 +2873,9 @@ static bool ParseFrontendArgs(FrontendOptions &Opts, ArgList &Args,
                 .Case("objective-c++", Language::ObjCXX)
                 .Case("renderscript", Language::RenderScript)
                 .Case("hlsl", Language::HLSL)
+//EG BEGIN
+                .Case("eg-cpp", InputKind::EG_CXX )
+//EG END
                 .Default(Language::Unknown);
 
     // "objc[++]-cpp-output" is an acceptable synonym for

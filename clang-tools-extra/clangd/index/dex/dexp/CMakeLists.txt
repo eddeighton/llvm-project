@@ -15,4 +15,5 @@ target_link_libraries(dexp
   PRIVATE
   clangDaemon
   clangdRemoteIndex
+  clangEG
   )

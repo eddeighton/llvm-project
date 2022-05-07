@@ -451,7 +451,9 @@ TEST_F(RegistryTest, Errors) {
   EXPECT_EQ("Incorrect type for arg 1. "
             "(Expected = Matcher<CXXRecordDecl>) != "
             "(Actual = Matcher<CXXRecordDecl|ObjCInterfaceDecl>&Matcher"
-            "<MemberExpr|UnresolvedMemberExpr|CXXDependentScopeMemberExpr>)",
+// EG BEGIN
+            "<MemberExpr|UnresolvedMemberExpr|CXXDependentScopeMemberExpr|CXXDependentEGInvokeExpr>)",
+// EG END
             Error->toString());
 }
 

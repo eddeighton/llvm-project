@@ -123,6 +123,9 @@ protected:
     ExprBits.ValueKind = VK;
     ExprBits.ObjectKind = OK;
     assert(ExprBits.ObjectKind == OK && "truncated kind");
+//EG BEGIN
+    ExprBits.IsEGInvocationViaDependantExpr = false;
+//EG END
     setType(T);
   }
 
@@ -238,6 +241,17 @@ public:
   bool containsErrors() const {
     return static_cast<bool>(getDependence() & ExprDependence::Error);
   }
+
+//EG BEGIN
+  bool isEGInvocationViaDependantExpr() const 
+  {
+    return ExprBits.IsEGInvocationViaDependantExpr;
+  }
+  void setEGInvocationViaDependantExpr()
+  {
+      ExprBits.IsEGInvocationViaDependantExpr = true;
+  }
+//EG END
 
   /// getExprLoc - Return the preferred location for the arrow when diagnosing
   /// a problem with a generic expression.

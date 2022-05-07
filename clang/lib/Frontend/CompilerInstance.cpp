@@ -755,6 +755,12 @@ void CompilerInstance::createSema(TranslationUnitKind TUKind,
     TheSema->addExternalSource(ExternalSemaSrc.get());
     ExternalSemaSrc->InitializeSema(*TheSema);
   }
+
+//EG BEGIN
+  clang_eg::eg_load_plugin( getFrontendOpts().EGPluginDllPath.c_str() );
+  clang_eg::eg_initialise( &getASTContext(), TheSema.get() );
+//EG END
+
 }
 
 // Output Files

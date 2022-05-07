@@ -33,4 +33,5 @@ clang_target_link_libraries(FormatTests
   clangFormat
   clangRewrite
   clangToolingCore
+  clangEG
   )

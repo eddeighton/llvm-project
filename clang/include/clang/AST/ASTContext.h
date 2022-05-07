@@ -14,6 +14,9 @@
 #ifndef LLVM_CLANG_AST_ASTCONTEXT_H
 #define LLVM_CLANG_AST_ASTCONTEXT_H
 
+// EG START
+#include "clang/EG/EGDatabase.h"
+// EG END
 #include "clang/AST/ASTContextAllocate.h"
 #include "clang/AST/ASTFwd.h"
 #include "clang/AST/CanonicalType.h"
@@ -405,6 +408,20 @@ class ASTContext : public RefCountedBase<ASTContext> {
 
   /// The identifier '__type_pack_element'.
   mutable IdentifierInfo *TypePackElementName = nullptr;
+
+  // EG BEGIN 
+  /// The identifier '__eg_type_path'.
+  mutable IdentifierInfo *EGTypePathName = nullptr;
+  
+  /// The identifier '__eg_invocation'.
+  mutable IdentifierInfo *EGInvocationTypeName = nullptr;
+  
+  /// The identifier '__eg_variant'.
+  mutable IdentifierInfo *EGVariantName = nullptr;
+  
+  /// The identifier 'invoke'.
+  mutable IdentifierInfo *EGInvokeName = nullptr;
+  // EG END 
 
   QualType ObjCConstantStringType;
   mutable RecordDecl *CFConstantStringTagDecl = nullptr;
@@ -1908,6 +1925,29 @@ public:
       TypePackElementName = &Idents.get("__type_pack_element");
     return TypePackElementName;
   }
+
+  // EG BEGIN
+  IdentifierInfo *getEGTypePathName() const {
+      if(!EGTypePathName)
+          EGTypePathName = &Idents.get( clang_eg::eg_getTypePathString() );
+      return EGTypePathName;
+  }
+  IdentifierInfo *getEGInvocationTypeName() const {
+      if(!EGInvocationTypeName)
+          EGInvocationTypeName = &Idents.get( clang_eg::eg_getInvocationString() );
+      return EGInvocationTypeName;
+  }  
+  IdentifierInfo *getEGVariantName() const {
+      if(!EGVariantName)
+          EGVariantName = &Idents.get( clang_eg::eg_getVariantString() );
+      return EGVariantName;
+  }
+  IdentifierInfo *getEGInvokeName() const {
+      if(!EGInvokeName)
+          EGInvokeName = &Idents.get( clang_eg::eg_getInvokeString() );
+      return EGInvokeName;
+  }
+  // EG END
 
   /// Retrieve the Objective-C "instancetype" type, if already known;
   /// otherwise, returns a NULL type;

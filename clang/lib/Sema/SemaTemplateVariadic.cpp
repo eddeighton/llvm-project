@@ -859,6 +859,9 @@ bool Sema::containsUnexpandedParameterPacks(Declarator &D) {
   case TST_typename:
   case TST_typeofType:
   case TST_underlyingType:
+//EG BEGIN
+  case TST_egResultType:
+//EG END
   case TST_atomic: {
     QualType T = DS.getRepAsType().get();
     if (!T.isNull() && T->containsUnexpandedParameterPack())

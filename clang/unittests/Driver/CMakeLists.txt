@@ -18,4 +18,5 @@ clang_target_link_libraries(ClangDriverTests
   clangDriver
   clangBasic
   clangFrontend # For TextDiagnosticPrinter.
+  clangEG
   )

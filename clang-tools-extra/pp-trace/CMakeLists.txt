@@ -15,4 +15,5 @@ clang_target_link_libraries(pp-trace
   clangLex
   clangSerialization
   clangTooling
+  clangEG
   )

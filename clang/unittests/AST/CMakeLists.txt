@@ -44,6 +44,7 @@ clang_target_link_libraries(ASTTests
   clangLex
   clangSerialization
   clangTooling
+  clangEG
   )
 
 target_link_libraries(ASTTests

@@ -3428,6 +3428,9 @@ bool Expr::HasSideEffects(const ASTContext &Ctx,
   case DependentScopeDeclRefExprClass:
   case CXXUnresolvedConstructExprClass:
   case CXXDependentScopeMemberExprClass:
+//EG BEGIN
+  case CXXDependentEGInvokeExprClass:
+//EG END
   case UnresolvedLookupExprClass:
   case UnresolvedMemberExprClass:
   case PackExpansionExprClass:

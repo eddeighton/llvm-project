@@ -31,6 +31,7 @@ clang_target_link_libraries(clangDoc
   clangLex
   clangTooling
   clangToolingCore
+  clangEG
   )
 
 add_subdirectory(tool)

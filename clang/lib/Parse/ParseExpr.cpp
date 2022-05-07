@@ -1129,18 +1129,34 @@ ExprResult Parser::ParseCastExpression(CastParseKind ParseKind,
                                      isVectorLiteral, NotPrimaryExpression);
         }
       }
-
-      if ((!ColonIsSacred && Next.is(tok::colon)) ||
-          Next.isOneOf(tok::coloncolon, tok::less, tok::l_paren,
-                       tok::l_brace)) {
-        // If TryAnnotateTypeOrScopeToken annotates the token, tail recurse.
-        if (TryAnnotateTypeOrScopeToken())
-          return ExprError();
-        if (!Tok.is(tok::identifier))
-          return ParseCastExpression(ParseKind, isAddressOfOperand,
-                                     NotCastExpr, isTypeCast,
-                                     isVectorLiteral,
-                                     NotPrimaryExpression);
+//EG BEGIN
+      if( clang_eg::eg_isEGEnabled() )
+      {
+          if ((!ColonIsSacred && Next.is(tok::colon)) ||
+              Next.isOneOf(tok::coloncolon, tok::less, tok::l_paren, tok::l_brace, 
+                    tok::period)) {
+            // If TryAnnotateTypeOrScopeToken annotates the token, tail recurse.
+            if (TryAnnotateTypeOrScopeToken())
+              return ExprError();
+            if (!Tok.is(tok::identifier))
+              return ParseCastExpression(isUnaryExpression, isAddressOfOperand);
+          }
+      }
+      else
+//EG END
+      {
+        if ((!ColonIsSacred && Next.is(tok::colon)) ||
+            Next.isOneOf(tok::coloncolon, tok::less, tok::l_paren,
+                        tok::l_brace)) {
+          // If TryAnnotateTypeOrScopeToken annotates the token, tail recurse.
+          if (TryAnnotateTypeOrScopeToken())
+            return ExprError();
+          if (!Tok.is(tok::identifier))
+            return ParseCastExpression(ParseKind, isAddressOfOperand,
+                                      NotCastExpr, isTypeCast,
+                                      isVectorLiteral,
+                                      NotPrimaryExpression);
+        }
       }
     }
 
@@ -2147,9 +2163,28 @@ Parser::ParsePostfixExpressionSuffix(ExprResult LHS) {
           }
           break;
         }
-        ParseOptionalCXXScopeSpecifier(
-            SS, ObjectType, LHS.get() && LHS.get()->containsErrors(),
-            /*EnteringContext=*/false, &MayBePseudoDestructor);
+
+
+//EG BEGIN
+        bool bAllowEGTypePath = false;
+        if( clang_eg::eg_isEGEnabled() )
+        {
+            if( !LHS.isInvalid() )
+            {
+                bAllowEGTypePath = clang_eg::eg_isPossibleEGType( LHS.get()->getType() );
+            }
+        }
+
+        ParseOptionalCXXScopeSpecifier(SS, ObjectType, LHS.get() && LHS.get()->containsErrors(),
+                                       /*EnteringContext=*/false,
+                                       &MayBePseudoDestructor, 
+                                      /*bool IsTypename =*/ false,
+                                      /*IdentifierInfo **LastII =*/ nullptr,
+                                      /*bool OnlyNamespace =*/ false,
+                                      bAllowEGTypePath );
+                
+//EG END
+
         if (SS.isNotEmpty())
           ObjectType = nullptr;
       }
@@ -2187,6 +2222,175 @@ Parser::ParsePostfixExpressionSuffix(ExprResult LHS) {
                                        ObjectType);
         break;
       }
+
+//EG BEGIN
+    //if dependent type then we do NOT know if this is an eg invocation or ordinary c++ member reference
+    if( clang_eg::eg_isEGEnabled() && 
+        !LHS.isInvalid() && 
+            LHS.get() && 
+            !LHS.get()->getType().isNull() && 
+            LHS.get()->getType()->isDependentType() &&
+            isPossibleEGInvocation() )
+    {
+          ParsedType TypeRep;
+          {
+              RevertingTentativeParsingAction revertingParse( *this );
+
+              if( Tok.is( tok::identifier ) )
+              {
+                  TryAnnotateName( false );
+              }
+
+              if( Tok.is( tok::annot_template_id ) )
+              {
+                  TemplateIdAnnotation *TemplateId = takeTemplateIdAnnotation( Tok );
+                  
+                  if( TemplateId->Kind != TNK_Type_template )
+                  {
+                      LHS = ExprError();
+                  }
+                  else 
+                  {
+                      CXXScopeSpec SS;
+                      AnnotateTemplateIdTokenAsType();
+                      if( !Tok.is( tok::annot_typename ) )
+                      {
+                          LHS = ExprError();
+                      }
+                  }
+              }
+
+              if( !LHS.isInvalid() && Tok.is( tok::annot_typename ) )
+              {
+                  DeclSpec DS( AttrFactory );
+                  ParseCXXSimpleTypeSpecifier( DS );
+
+                  Declarator DeclaratorInfo( DS, DeclaratorContext::FunctionalCastContext );
+                  TypeRep = Actions.ActOnTypeName( getCurScope(), DeclaratorInfo ).get();
+              }
+          }
+          
+          //create dependently typed eg invoke
+          SourceLocation TemplateKWLoc;
+          UnqualifiedId Name;
+          if (!LHS.isInvalid())
+          {
+              if (ParseUnqualifiedId(     SS,
+                                          /*EnteringContext=*/false,
+                                          /*AllowDestructorName=*/true,
+                                          /*AllowConstructorName=*/
+                                          getLangOpts().MicrosoftExt &&
+                                              SS.isNotEmpty(),
+                                          /*AllowDeductionGuide=*/false,
+                                          ObjectType, &TemplateKWLoc, Name )) 
+              {
+                  (void)Actions.CorrectDelayedTyposInExpr(LHS);
+                  LHS = ExprError();
+              }
+          }
+
+          if (!LHS.isInvalid())
+          {
+            const int iInvokeLocHandle = Actions.eg_pushInvokeLocation( OpLoc );
+            LHS = Actions.ActOnAmbiguousEGInvokeMemberAccessExpr( 
+                  TypeRep,
+                  getCurScope(), LHS.get(), OpLoc,
+                  OpKind, SS, TemplateKWLoc, Name,
+                  CurParsedObjCImpl ? CurParsedObjCImpl->Dcl : nullptr);
+            Actions.eg_popInvokeLocation( iInvokeLocHandle );
+          }
+          if (!LHS.isInvalid() && Tok.is(tok::less))
+          {
+              checkPotentialAngleBracket(LHS);
+          }
+      }
+      else if( clang_eg::eg_isEGEnabled() && 
+            !LHS.isInvalid() && 
+            LHS.get() && 
+            !LHS.get()->getType().isNull() && 
+            clang_eg::eg_isEGType( LHS.get()->getType() ) ) //handle normal eg member invoke
+      {
+            if( Tok.is( tok::identifier ) )
+            {
+                TryAnnotateName( false );
+            }
+
+            if( Tok.is( tok::annot_template_id ) )
+            {
+                TemplateIdAnnotation *TemplateId = takeTemplateIdAnnotation( Tok );
+                if( TemplateId->Kind != TNK_Type_template )
+                {
+                    LHS = ExprError();
+                }
+                else
+                {
+                    CXXScopeSpec SS;
+                    AnnotateTemplateIdTokenAsType();
+                    if( !Tok.is( tok::annot_typename ) )
+                    {
+                        LHS = ExprError();
+                    }
+                }
+            }
+
+          if (!LHS.isInvalid())
+          {
+            if( Tok.is( tok::annot_typename ) )
+            {
+                DeclSpec DS( AttrFactory );
+                ParseCXXSimpleTypeSpecifier( DS );
+            
+                Declarator DeclaratorInfo( DS, DeclaratorContext::FunctionalCastContext );
+                ParsedType TypeRep = Actions.ActOnTypeName( getCurScope(), DeclaratorInfo ).get();
+                    
+                SourceLocation Loc = Tok.getLocation();
+
+                BalancedDelimiterTracker T( *this, tok::l_paren );
+                T.consumeOpen();
+
+                ExprVector Exprs;
+                CommaLocsTy CommaLocs;
+
+                if( Tok.isNot( tok::r_paren ) )
+                {
+                    if( ParseExpressionList( Exprs, CommaLocs, [ & ]
+                    {
+                        QualType PreferredType = Actions.ProduceConstructorSignatureHelp(
+                            getCurScope(), TypeRep.get()->getCanonicalTypeInternal(),
+                            DS.getEndLoc(), Exprs, T.getOpenLocation() );
+                        CalledSignatureHelp = true;
+                        Actions.CodeCompleteExpression( getCurScope(), PreferredType );
+                    } ) )
+                    {
+                        if( PP.isCodeCompletionReached() && !CalledSignatureHelp )
+                        {
+                            Actions.ProduceConstructorSignatureHelp(
+                                getCurScope(), TypeRep.get()->getCanonicalTypeInternal(),
+                                DS.getEndLoc(), Exprs, T.getOpenLocation() );
+                            CalledSignatureHelp = true;
+                        }
+                        SkipUntil( tok::r_paren, StopAtSemi );
+                        return ExprError();
+                    }
+                }
+                T.consumeClose();
+                
+                const int iInvokeLocHandle = Actions.eg_pushInvokeLocation( OpLoc );
+                LHS = Actions.ActOnEgMemberInvocation( 
+                                    getCurScope(), LHS.get(), SS, TypeRep,
+                                    OpKind == tok::arrow, 
+                                    T.getOpenLocation(), Exprs, T.getCloseLocation() );  
+                Actions.eg_popInvokeLocation( iInvokeLocHandle );
+            }
+            else
+            {
+                LHS = ExprError();
+            }   
+          }
+      }
+      else //handle normal c++ member access expr
+      {
+//EG END
 
       // Either the action has told us that this cannot be a
       // pseudo-destructor expression (based on the type of base
@@ -2233,6 +2437,9 @@ Parser::ParsePostfixExpressionSuffix(ExprResult LHS) {
         LHS = Actions.CreateRecoveryExpr(OrigLHS->getBeginLoc(),
                                          Name.getEndLoc(), {OrigLHS});
       }
+//EG BEGIN
+      }
+//EG END
       break;
     }
     case tok::plusplus:    // postfix-expression: postfix-expression '++'

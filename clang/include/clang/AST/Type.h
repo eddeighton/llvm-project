@@ -4566,6 +4566,9 @@ class UnaryTransformType : public Type {
 public:
   enum UTTKind {
     EnumUnderlyingType
+//EG BEGIN
+    ,EGResultType
+//EG END
   };
 
 private:

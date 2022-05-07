@@ -3960,6 +3960,9 @@ void CXXNameMangler::mangleType(const DecltypeType *T) {
       isa<UnresolvedLookupExpr>(E) ||
       isa<DependentScopeDeclRefExpr>(E) ||
       isa<CXXDependentScopeMemberExpr>(E) ||
+//EG BEGIN
+      isa<CXXDependentEGInvokeExpr>(E) ||
+//EG END
       isa<UnresolvedMemberExpr>(E))
     Out << "Dt";
   else
@@ -3978,6 +3981,11 @@ void CXXNameMangler::mangleType(const UnaryTransformType *T) {
       case UnaryTransformType::EnumUnderlyingType:
         Out << "3eut";
         break;
+//EG BEGIN
+      case UnaryTransformType::EGResultType:
+        Out << "3eut";
+        break;
+//EG END
     }
   }
 
@@ -4516,6 +4524,20 @@ recurse:
                      Arity);
     break;
   }
+
+//EG BEGIN
+  case Expr::CXXDependentEGInvokeExprClass: {
+    const CXXDependentEGInvokeExpr *ME
+      = cast<CXXDependentEGInvokeExpr>(E);
+    mangleMemberExpr(ME->isImplicitAccess() ? nullptr : ME->getBase(),
+                     ME->isArrow(), ME->getQualifier(),
+                     ME->getFirstQualifierFoundInScope(),
+                     ME->getMember(),
+                     ME->getTemplateArgs(), ME->getNumTemplateArgs(),
+                     Arity);
+    break;
+  }
+//EG END
 
   case Expr::UnresolvedLookupExprClass: {
     NotPrimaryExpr();

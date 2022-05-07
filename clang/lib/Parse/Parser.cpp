@@ -40,6 +40,73 @@ public:
 };
 } // end anonymous namespace
 
+
+////////////////////////////////////////////////////////////////////////////////
+//EG BEGIN
+Parser::EGTypePathParsingAction::EGTypePathParsingAction( Parser& p )
+    :   TentativeParsingAction( p ),
+        m_parser( p ),
+        m_bActive( true )
+{
+    assert( clang_eg::eg_isEGEnabled() && "EG Type Paths not enabled while using EGTypePathParsingAction" );
+    m_parser.EGTypePathParsingStack.push_back( this );
+}
+
+Parser::EGTypePathParsingAction::~EGTypePathParsingAction()
+{
+    m_parser.EGTypePathParsingStack.pop_back();
+    if( !bDidCommit ) TentativeParsingAction::Revert();
+}
+
+bool Parser::EGTypePathParsingAction::isActive() const { return m_bActive; }
+void Parser::EGTypePathParsingAction::setActive( bool bActive ) const { m_bActive = bActive; }
+
+void Parser::EGTypePathParsingAction::Commit()
+{
+    bDidCommit = true;
+    TentativeParsingAction::Commit();
+}
+
+Parser::EGTypePathParsingNestingAction::EGTypePathParsingNestingAction( Parser& p ) : m_parser( p )
+{
+    if( !m_parser.EGTypePathParsingStack.empty() )
+    {
+        pAction = m_parser.EGTypePathParsingStack.back();
+    }
+    if( pAction )
+    {
+        pAction->setActive( false );
+    }
+}
+Parser::EGTypePathParsingNestingAction::~EGTypePathParsingNestingAction()
+{
+    if( pAction )
+    {
+        pAction->setActive( true );
+    }
+}
+
+bool Parser::isEGTypePathParsing() const
+{
+  if( clang_eg::eg_isEGEnabled() )
+  {
+      if( EGTypePathParsingStack.empty() )
+      {
+          return false;
+      }
+      else
+      {
+          return EGTypePathParsingStack.back()->isActive();
+      }
+  }
+  else
+  {
+      return false;
+  }
+}
+//EG END
+////////////////////////////////////////////////////////////////////////////////
+
 IdentifierInfo *Parser::getSEHExceptKeyword() {
   // __except is accepted as a (contextual) keyword
   if (!Ident__except && (getLangOpts().MicrosoftExt || getLangOpts().Borland))

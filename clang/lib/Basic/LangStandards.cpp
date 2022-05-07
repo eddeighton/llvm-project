@@ -73,6 +73,7 @@ LangStandard::Kind clang::getDefaultLanguageStandard(clang::Language Lang,
 #endif
   case Language::CXX:
   case Language::ObjCXX:
+  case Language::EG_CXX:
 #if defined(CLANG_DEFAULT_STD_CXX)
     return CLANG_DEFAULT_STD_CXX;
 #else

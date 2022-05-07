@@ -83,6 +83,9 @@ namespace clang {
     TST_typeofExpr,
     TST_decltype,         // C++11 decltype
     TST_underlyingType,   // __underlying_type for C++11
+    //EG BEGIN
+    TST_egResultType,     // __eg_result_type for eg
+    //EG END
     TST_auto,             // C++11 auto
     TST_decltype_auto,    // C++1y decltype(auto)
     TST_auto_type,        // __auto_type extension

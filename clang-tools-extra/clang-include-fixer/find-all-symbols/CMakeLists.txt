@@ -25,6 +25,7 @@ clang_target_link_libraries(findAllSymbols
   clangFrontend
   clangLex
   clangTooling
+  clangEG
   )
 
 add_subdirectory(tool)

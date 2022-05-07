@@ -5,6 +5,7 @@ add_clang_unittest(libclangTests
 target_link_libraries(libclangTests
   PRIVATE
   libclang
+  clangEG
   )
 
 add_subdirectory(CrashTests)

@@ -38,6 +38,7 @@ clang_target_link_libraries(clangTidy
   clangSerialization
   clangTooling
   clangToolingCore
+  clangEG
   )
 
 if(CLANG_TIDY_ENABLE_STATIC_ANALYZER)

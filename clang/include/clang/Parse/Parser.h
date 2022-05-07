@@ -994,6 +994,44 @@ private:
     ~RevertingTentativeParsingAction() { Revert(); }
   };
 
+  ////////////////////////////////////////////////////////////////////////////////
+  //EG BEGIN
+  // Type Path Handling Stuff....
+  friend class EGTypePathParsingAction;
+  class EGTypePathParsingAction;
+  
+  //stack of TypePathParsingAction
+private:  
+  std::list< const EGTypePathParsingAction* > EGTypePathParsingStack;
+  
+private:  
+  class EGTypePathParsingAction : public TentativeParsingAction
+  {
+    Parser &m_parser;
+    bool bDidCommit = false;
+    mutable bool m_bActive;
+        
+  public:
+    EGTypePathParsingAction( Parser& p );
+    ~EGTypePathParsingAction();
+    bool isActive() const;
+    void setActive( bool bActive ) const;
+    void Commit();
+  };
+  
+  class EGTypePathParsingNestingAction
+  {
+    Parser &m_parser;
+    const EGTypePathParsingAction* pAction = nullptr;
+  public:
+    EGTypePathParsingNestingAction( Parser& p );
+    ~EGTypePathParsingNestingAction();
+  };
+  
+  bool isEGTypePathParsing() const;
+  //EG END
+  ////////////////////////////////////////////////////////////////////////////////
+  
   class UnannotatedTentativeParsingAction;
 
   /// ObjCDeclContextSwitch - An object used to switch context from
@@ -1875,7 +1913,23 @@ private:
                                       bool IsTypename = false,
                                       IdentifierInfo **LastII = nullptr,
                                       bool OnlyNamespace = false,
-                                      bool InUsingDeclaration = false);
+                                      bool InUsingDeclaration = false,
+//EG BEGIN
+                                      bool AllowEGTypePath = true);
+//EG END);
+
+//EG BEGIN
+  bool isPossibleEGTypePath();         
+  bool isPossibleEGInvocation();
+  
+  bool ParsePossibleEGTypePath(   CXXScopeSpec &SS,
+                                  ParsedType ObjectType,
+                                  bool EnteringContext,
+                                  bool *MayBePseudoDestructor,
+                                  bool IsTypename,
+                                  IdentifierInfo **LastII,
+                                  bool OnlyNamespace );
+//EG END
 
   //===--------------------------------------------------------------------===//
   // C++11 5.1.2: Lambda expressions
@@ -2882,6 +2936,9 @@ private:
                                          SourceLocation StartLoc,
                                          SourceLocation EndLoc);
   void ParseUnderlyingTypeSpecifier(DeclSpec &DS);
+//EG BEGIN
+  void ParseEGResultTypeSpecifier(DeclSpec &DS);
+//EG END
   void ParseAtomicSpecifier(DeclSpec &DS);
 
   ExprResult ParseAlignArgument(SourceLocation Start,
@@ -3414,6 +3471,12 @@ private:
                                UnqualifiedId &TemplateName,
                                bool AllowTypeAnnotation = true,
                                bool TypeConstraint = false);
+
+//EG BEGIN
+  bool AnnotateTypePathTemplateIdToken( CXXScopeSpec &SS, ParsedType ObjectType, 
+    bool EnteringContext, bool AllowTypeAnnotation = true);
+//EG END
+
   void AnnotateTemplateIdTokenAsType(CXXScopeSpec &SS,
                                      bool IsClassName = false);
   bool ParseTemplateArgumentList(TemplateArgList &TemplateArgs,

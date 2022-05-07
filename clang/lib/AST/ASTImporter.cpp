@@ -664,6 +664,9 @@ namespace clang {
     ExpectedStmt VisitCXXConstructExpr(CXXConstructExpr *E);
     ExpectedStmt VisitCXXMemberCallExpr(CXXMemberCallExpr *E);
     ExpectedStmt VisitCXXDependentScopeMemberExpr(CXXDependentScopeMemberExpr *E);
+//EG BEGIN
+    ExpectedStmt VisitCXXDependentEGInvokeExpr(CXXDependentEGInvokeExpr *E);
+//EG END
     ExpectedStmt VisitDependentScopeDeclRefExpr(DependentScopeDeclRefExpr *E);
     ExpectedStmt VisitCXXUnresolvedConstructExpr(CXXUnresolvedConstructExpr *E);
     ExpectedStmt VisitUnresolvedLookupExpr(UnresolvedLookupExpr *E);
@@ -7852,6 +7855,58 @@ ExpectedStmt ASTNodeImporter::VisitCXXDependentScopeMemberExpr(
       ToQualifierLoc, ToTemplateKeywordLoc, ToFirstQualifierFoundInScope,
       ToMemberNameInfo, ResInfo);
 }
+
+
+//EG BEGIN
+ExpectedStmt ASTNodeImporter::VisitCXXDependentEGInvokeExpr(
+    CXXDependentEGInvokeExpr *E) {
+  auto Imp = importSeq(
+      E->getType(), E->getOperatorLoc(), E->getQualifierLoc(),
+      E->getTemplateKeywordLoc(), E->getFirstQualifierFoundInScope());
+  if (!Imp)
+    return Imp.takeError();
+
+  QualType ToType;
+  SourceLocation ToOperatorLoc, ToTemplateKeywordLoc;
+  NestedNameSpecifierLoc ToQualifierLoc;
+  NamedDecl *ToFirstQualifierFoundInScope;
+  std::tie(
+      ToType, ToOperatorLoc, ToQualifierLoc, ToTemplateKeywordLoc,
+      ToFirstQualifierFoundInScope) = *Imp;
+
+  Expr *ToBase = nullptr;
+  if (!E->isImplicitAccess()) {
+    if (ExpectedExpr ToBaseOrErr = import(E->getBase()))
+      ToBase = *ToBaseOrErr;
+    else
+      return ToBaseOrErr.takeError();
+  }
+
+  TemplateArgumentListInfo ToTAInfo, *ResInfo = nullptr;
+  if (E->hasExplicitTemplateArgs()) {
+    if (Error Err = ImportTemplateArgumentListInfo(
+        E->getLAngleLoc(), E->getRAngleLoc(), E->template_arguments(),
+        ToTAInfo))
+      return std::move(Err);
+    ResInfo = &ToTAInfo;
+  }
+
+  auto ToMemberNameInfoOrErr = importSeq(E->getMember(), E->getMemberLoc());
+  if (!ToMemberNameInfoOrErr)
+    return ToMemberNameInfoOrErr.takeError();
+  DeclarationNameInfo ToMemberNameInfo(
+      std::get<0>(*ToMemberNameInfoOrErr), std::get<1>(*ToMemberNameInfoOrErr));
+  // Import additional name location/type info.
+  if (Error Err = ImportDeclarationNameLoc(
+      E->getMemberNameInfo(), ToMemberNameInfo))
+    return std::move(Err);
+
+  return CXXDependentEGInvokeExpr::Create( QualType(),
+      Importer.getToContext(), ToBase, ToType, E->isArrow(), ToOperatorLoc,
+      ToQualifierLoc, ToTemplateKeywordLoc, ToFirstQualifierFoundInScope,
+      ToMemberNameInfo, ResInfo);
+}
+//EG END
 
 ExpectedStmt
 ASTNodeImporter::VisitDependentScopeDeclRefExpr(DependentScopeDeclRefExpr *E) {

@@ -1401,6 +1401,136 @@ bool Parser::AnnotateTemplateIdToken(TemplateTy Template, TemplateNameKind TNK,
   return false;
 }
 
+
+//EG BEGIN
+bool Parser::AnnotateTypePathTemplateIdToken( CXXScopeSpec &SS, 
+    ParsedType ObjectType, bool EnteringContext, bool AllowTypeAnnotation )
+{
+    
+    ColonProtectionRAIIObject ColonProtection(*this, false);
+    
+    TemplateArgList TemplateArgs;
+    
+    SourceLocation LAngleLoc = Tok.getLocation();
+
+    {
+        EGTypePathParsingAction typePathParsingAction( *this );
+        do 
+        {
+            ParsedTemplateArgument Arg = ParseTemplateArgument();
+            SourceLocation EllipsisLoc;
+            if( TryConsumeToken( tok::ellipsis, EllipsisLoc ) )
+            {
+                Arg = Actions.ActOnPackExpansion( Arg, EllipsisLoc );
+            }
+
+            if( Arg.isInvalid() || ( Arg.getKind() == ParsedTemplateArgument::NonType ) )
+            {
+                return false;
+            }
+
+            // Save this template argument.
+            TemplateArgs.push_back( Arg );
+
+            // If the next token is a comma, consume it and keep reading
+            // arguments.
+        } while ( TryConsumeToken( tok::period ) );
+
+        typePathParsingAction.Commit();
+    }
+
+    //duplicate the next token
+    {
+        Token tokenCopy = Tok;
+        PP.EnterToken( tokenCopy );
+    }
+
+    //then use first duplicate as fake r angle bracket for annotation token
+    SourceLocation RAngleLoc = Tok.getLocation();
+    
+    ASTTemplateArgsPtr TemplateArgsPtr( TemplateArgs );
+    
+    TemplateTy Template;
+    UnqualifiedId TemplateName;
+
+    IdentifierInfo &II = *( Actions.getASTContext().getEGTypePathName() );
+
+    //TemplateName.setIdentifier( &II, Tok.getLocation() );
+    TemplateName.setIdentifier( &II, LAngleLoc );
+    bool MemberOfUnknownSpecialization;
+    TemplateNameKind TNK = Actions.isTemplateName( getCurScope(), SS,
+                                          /*hasTemplateKeyword=*/false,
+                                                    TemplateName,
+                                                    ObjectType,
+                                                    EnteringContext,
+                                                    Template,
+                                          MemberOfUnknownSpecialization);
+
+    SourceLocation TemplateKWLoc;
+    SourceLocation TemplateNameLoc = TemplateName.getSourceRange().getBegin();
+
+    if( TNK == TNK_Type_template && AllowTypeAnnotation )
+    {
+        TypeResult Type = Actions.ActOnTemplateIdType(
+            SS, TemplateKWLoc, Template, TemplateName.Identifier,
+            TemplateNameLoc, LAngleLoc, TemplateArgsPtr, RAngleLoc );
+        if( Type.isInvalid() )
+        {
+            // If we failed to parse the template ID but skipped ahead to a >, we're
+            // not going to be able to form a token annotation.  Eat the '>' if
+            // present.
+            TryConsumeToken( tok::greater );
+            return true;
+        }
+
+        Tok.setKind( tok::annot_typename );
+        setTypeAnnotation( Tok, Type.get() );
+        if( SS.isNotEmpty() )
+            Tok.setLocation( SS.getBeginLoc() );
+        else if( TemplateKWLoc.isValid() )
+            Tok.setLocation( TemplateKWLoc );
+        else
+            Tok.setLocation( TemplateNameLoc );
+    }
+    else
+    {
+        // Build a template-id annotation token that can be processed
+        // later.
+        Tok.setKind(tok::annot_typename );
+
+        IdentifierInfo *TemplateII =
+            TemplateName.getKind() == UnqualifiedIdKind::IK_Identifier
+                ? TemplateName.Identifier
+                : nullptr;
+
+        OverloadedOperatorKind OpKind = OO_None;
+        //OverloadedOperatorKind OpKind =
+        //    TemplateName.getKind() == UnqualifiedIdKind::IK_Identifier
+        //        ? OO_None
+        //        : TemplateName.OperatorFunctionId.Operator;
+
+        TemplateIdAnnotation *TemplateId = TemplateIdAnnotation::Create(
+          SS, TemplateKWLoc, TemplateNameLoc, TemplateII, OpKind, Template, TNK,
+          LAngleLoc, RAngleLoc, TemplateArgs, TemplateIds);
+
+        Tok.setAnnotationValue(TemplateId);
+        if (TemplateKWLoc.isValid())
+          Tok.setLocation(TemplateKWLoc);
+        else
+          Tok.setLocation(TemplateNameLoc);
+    }
+
+    // Common fields for the annotation token
+    Tok.setAnnotationEndLoc(RAngleLoc);
+
+    // In case the tokens were cached, have Preprocessor replace them with the
+    // annotation token.
+    PP.AnnotateCachedTokens(Tok);
+    return false;
+    
+}
+//EG END
+
 /// Replaces a template-id annotation token with a type
 /// annotation token.
 ///
@@ -1558,6 +1688,13 @@ ParsedTemplateArgument Parser::ParseTemplateArgument() {
     return Actions.ActOnTemplateTypeArgument(TypeArg);
   }
 
+  //EG BEGIN
+  if( clang_eg::eg_isEGEnabled() && isEGTypePathParsing() )
+  {
+      return ParsedTemplateArgument();
+  }
+  //EG END
+  
   // Try to parse a template template argument.
   {
     TentativeParsingAction TPA(*this);
@@ -1597,6 +1734,11 @@ bool Parser::ParseTemplateArgumentList(TemplateArgList &TemplateArgs,
                                        SourceLocation OpenLoc) {
 
   ColonProtectionRAIIObject ColonProtection(*this, false);
+
+  //EG BEGIN
+  //allow nested type paths in nested template parameter lists
+  EGTypePathParsingNestingAction typePathParsingAction( *this );
+  //EG END
 
   auto RunSignatureHelp = [&] {
     if (!Template)

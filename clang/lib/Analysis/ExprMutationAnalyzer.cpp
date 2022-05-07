@@ -280,13 +280,25 @@ const Stmt *ExprMutationAnalyzer::findDirectMutation(const Expr *Exp) {
           callee(expr(anyOf(unresolvedMemberExpr(hasObjectExpression(
                                 canResolveToExpr(equalsNode(Exp)))),
                             cxxDependentScopeMemberExpr(hasObjectExpression(
-                                canResolveToExpr(equalsNode(Exp)))))))),
+                                canResolveToExpr(equalsNode(Exp))
+//EG BEGIN
+                          ,cxxDependentEGInvokeExpr(
+                              hasObjectExpression(equalsNode(Exp))) 
+//EG END
+                                )))))),
       // Match on a call to a known method, but the call itself is type
       // dependent (e.g. `vector<T> v; v.push(T{});` in a templated function).
       callExpr(allOf(isTypeDependent(),
                      callee(memberExpr(hasDeclaration(NonConstMethod),
                                        hasObjectExpression(canResolveToExpr(
                                            equalsNode(Exp)))))))));
+
+
+//EG BEGIN
+                    ,cxxDependentEGInvokeExpr(
+                         hasObjectExpression(equalsNode(Exp))) 
+//EG END
+
 
   // Taking address of 'Exp'.
   // We're assuming 'Exp' is mutated as soon as its address is taken, though in
@@ -330,6 +342,12 @@ const Stmt *ExprMutationAnalyzer::findDirectMutation(const Expr *Exp) {
       cxxConstructExpr(NonConstRefParam, NotInstantiated),
       callExpr(TypeDependentCallee,
                hasAnyArgument(canResolveToExpr(equalsNode(Exp)))),
+
+//EG BEGIN
+      callExpr(callee(expr(anyOf(cxxDependentEGInvokeExpr()))),
+               hasAnyArgument(equalsNode(Exp))),
+//EG END
+
       cxxUnresolvedConstructExpr(
           hasAnyArgument(canResolveToExpr(equalsNode(Exp)))),
       // Previous False Positive in the following Code:
@@ -379,7 +397,12 @@ const Stmt *ExprMutationAnalyzer::findMemberMutation(const Expr *Exp) {
       match(findAll(expr(anyOf(memberExpr(hasObjectExpression(
                                    canResolveToExpr(equalsNode(Exp)))),
                                cxxDependentScopeMemberExpr(hasObjectExpression(
-                                   canResolveToExpr(equalsNode(Exp))))))
+                                   canResolveToExpr(equalsNode(Exp))))
+//EG BEGIN
+                              ,cxxDependentEGInvokeExpr( 
+                                   hasObjectExpression(equalsNode(Exp)))
+//EG END
+                                   ))
                         .bind(NodeID<Expr>::value)),
             Stm, Context);
   return findExprMutation(MemberExprs);

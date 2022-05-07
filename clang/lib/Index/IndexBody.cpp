@@ -193,6 +193,15 @@ public:
         [](const NamedDecl *D) { return D->isCXXInstanceMember(); });
   }
 
+//EG BEGIN
+  bool VisitCXXDependentEGInvokeExpr(CXXDependentEGInvokeExpr *E) {
+    const DeclarationNameInfo &Info = E->getMemberNameInfo();
+    return indexDependentReference(
+        E, E->getBaseType().getTypePtrOrNull(), Info,
+        [](const NamedDecl *D) { return D->isCXXInstanceMember(); });
+  }
+//EG END
+
   bool VisitDependentScopeDeclRefExpr(DependentScopeDeclRefExpr *E) {
     const DeclarationNameInfo &Info = E->getNameInfo();
     const NestedNameSpecifier *NNS = E->getQualifier();

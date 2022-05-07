@@ -20,6 +20,7 @@ clang_target_link_libraries(modularize
   clangLex
   clangSerialization
   clangTooling
+  clangEG
   )
 
 install(TARGETS modularize

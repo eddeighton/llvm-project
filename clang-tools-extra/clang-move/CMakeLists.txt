@@ -23,6 +23,7 @@ clang_target_link_libraries(clangMove
   clangSerialization
   clangTooling
   clangToolingCore
+  clangEG
   )
 
 add_subdirectory(tool)

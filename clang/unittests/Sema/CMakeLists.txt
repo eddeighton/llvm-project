@@ -20,6 +20,7 @@ clang_target_link_libraries(SemaTests
   clangSema
   clangSerialization
   clangTooling
+  clangEG
   )
 
 target_link_libraries(SemaTests

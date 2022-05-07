@@ -1992,6 +1992,10 @@ enum StmtCode {
 
   // SYCLUniqueStableNameExpr
   EXPR_SYCL_UNIQUE_STABLE_NAME,
+
+//EG BEGIN
+  EXPR_CXX_DEPENDENT_EG_INVOKE,      // CXXDependentEGInvokeExpr
+//EG END
 };
 
 /// The kinds of designators that can occur in a

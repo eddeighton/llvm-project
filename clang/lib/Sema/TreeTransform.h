@@ -3348,6 +3348,28 @@ public:
                                             TemplateArgs, /*S*/nullptr);
   }
 
+//EG BEGIN
+  ExprResult RebuildCXXDependentEGInvokeExpr(Expr *BaseE,
+                                                QualType BaseType,
+                                                bool IsArrow,
+                                                SourceLocation OperatorLoc,
+                                          NestedNameSpecifierLoc QualifierLoc,
+                                                SourceLocation TemplateKWLoc,
+                                            NamedDecl *FirstQualifierInScope,
+                                   const DeclarationNameInfo &MemberNameInfo,
+                              const TemplateArgumentListInfo *TemplateArgs) {
+    CXXScopeSpec SS;
+    SS.Adopt(QualifierLoc);
+
+    return SemaRef.BuildMemberReferenceExpr(BaseE, BaseType,
+                                            OperatorLoc, IsArrow,
+                                            SS, TemplateKWLoc,
+                                            FirstQualifierInScope,
+                                            MemberNameInfo,
+                                            TemplateArgs, /*S*/nullptr);
+  }
+//EG END
+  
   /// Build a new member reference expression.
   ///
   /// By default, performs semantic analysis to build the new expression.
@@ -10963,8 +10985,16 @@ TreeTransform<Derived>::TransformOMPIteratorExpr(OMPIteratorExpr *E) {
 template<typename Derived>
 ExprResult
 TreeTransform<Derived>::TransformCallExpr(CallExpr *E) {
+
+//EG BEGIN
+  Expr* pCalleeExpr = E->getCallee();
+  if( CXXDependentEGInvokeExpr* pDependentEGInvoke = 
+        dyn_cast< CXXDependentEGInvokeExpr >( pCalleeExpr ) )
+      pDependentEGInvoke->setRootCallExpr( E );
+
   // Transform the callee.
-  ExprResult Callee = getDerived().TransformExpr(E->getCallee());
+  ExprResult Callee = getDerived().TransformExpr( pCalleeExpr );
+//EG END
   if (Callee.isInvalid())
     return ExprError();
 
@@ -13389,6 +13419,210 @@ TreeTransform<Derived>::TransformCXXDependentScopeMemberExpr(
                                                      NameInfo,
                                                      &TransArgs);
 }
+
+
+//EG BEGIN
+template<typename Derived>
+ExprResult
+TreeTransform<Derived>::TransformCXXDependentEGInvokeExpr(
+                                             CXXDependentEGInvokeExpr *E) {
+  
+  if( !E->getRootCallExpr() )
+      return ExprError();
+  
+  // Transform the base of the expression.
+  ExprResult Base((Expr*) nullptr);
+  Expr *OldBase;
+  QualType BaseType;
+  QualType ObjectType;
+  if (!E->isImplicitAccess()) {
+    OldBase = E->getBase();
+    
+    if( CXXDependentEGInvokeExpr* pNestedBase = 
+        dyn_cast< CXXDependentEGInvokeExpr >( OldBase ) )
+    {
+        pNestedBase->setNested( E );
+        pNestedBase->setRootCallExpr( E->getRootCallExpr() );
+    }
+    
+    Base = getDerived().TransformExpr(OldBase);
+    if (Base.isInvalid())
+      return ExprError();
+  
+    if( ((Expr*) Base.get() )->isEGInvocationViaDependantExpr() )
+    {
+        return Base;
+    }
+
+    // Start the member reference and compute the object's type.
+    ParsedType ObjectTy;
+    bool MayBePseudoDestructor = false;
+    Base = SemaRef.ActOnStartCXXMemberReference(nullptr, Base.get(),
+                                                E->getOperatorLoc(),
+                                      E->isArrow()? tok::arrow : tok::period,
+                                                ObjectTy,
+                                                MayBePseudoDestructor);
+    if (Base.isInvalid())
+      return ExprError();
+
+    ObjectType = ObjectTy.get();
+    BaseType = ((Expr*) Base.get())->getType();
+  } else {
+    OldBase = nullptr;
+    BaseType = getDerived().TransformType(E->getBaseType());
+    ObjectType = BaseType->getAs<PointerType>()->getPointeeType();
+  }
+
+  // Transform the first part of the nested-name-specifier that qualifies
+  // the member name.
+  NamedDecl *FirstQualifierInScope
+    = getDerived().TransformFirstQualifierInScope(
+                                            E->getFirstQualifierFoundInScope(),
+                                            E->getQualifierLoc().getBeginLoc());
+
+  NestedNameSpecifierLoc QualifierLoc;
+  if (E->getQualifier()) {
+    QualifierLoc
+      = getDerived().TransformNestedNameSpecifierLoc(E->getQualifierLoc(),
+                                                     ObjectType,
+                                                     FirstQualifierInScope);
+    if (!QualifierLoc)
+      return ExprError();
+  }
+
+  SourceLocation TemplateKWLoc = E->getTemplateKeywordLoc();
+
+  // TODO: If this is a conversion-function-id, verify that the
+  // destination type name (if present) resolves the same way after
+  // instantiation as it did in the local scope.
+
+  //DeclarationNameInfo NameInfo
+  //  = getDerived().TransformDeclarationNameInfo(E->getMemberNameInfo());
+  //if (!NameInfo.getName())
+  //  return ExprError();
+
+  //now we know the dependant type is it an EG type?
+  if( clang_eg::eg_isEGEnabled() && clang_eg::eg_isEGType( BaseType ) )
+  {
+        //construct the eg invocation
+        DeclarationNameInfo InvokeNameInfo( 
+            SemaRef.Context.getEGInvokeName(), E->getOperatorLoc() );
+
+        DeclarationNameInfo InvokeNameInfoTransformed
+            = getDerived().TransformDeclarationNameInfo( InvokeNameInfo );
+        if( !InvokeNameInfoTransformed.getName() )
+          return ExprError();
+        SourceLocation loc = InvokeNameInfoTransformed.getLoc();
+
+        //find the parent expressions up to the call expr
+        CXXScopeSpec SS;
+        SS.Adopt(QualifierLoc);
+
+        //make up a source location for the template angle brackets so that 
+        //later the unresolved member call expr is seen to have explicit template arguments
+        TemplateArgumentListInfo templateArgs( loc, loc );
+        
+        {
+            QualType typePathType = getDerived().TransformType( E->getTypePathType() );
+
+            templateArgs.addArgument(
+                SemaRef.getTrivialTemplateArgumentLoc(
+                    TemplateArgument( typePathType ), QualType(), TemplateKWLoc ) );
+
+            if( !E->getRootCallExpr() )
+            {
+                return ExprError();
+            }
+                    
+            //add the operation type template parameter
+            {
+                const bool bHasArguments = ( E->getRootCallExpr()->getNumArgs() > 0U );
+                
+                QualType operationType;
+                if( !clang_eg::eg_getInvocationOperationType( ((Expr*) Base.get())->getExprLoc(),
+                    typePathType, bHasArguments, operationType ) )
+                {
+                    return ExprError();
+                }
+        
+                templateArgs.addArgument(
+                    SemaRef.getTrivialTemplateArgumentLoc(
+                        TemplateArgument( operationType ), QualType(), TemplateKWLoc ) );
+            }
+        }
+      
+        if( templateArgs.size() != 2U )
+        {
+            return ExprError();
+        }
+      
+        TemplateArgumentListInfo TransArgs( loc, loc );
+        if (getDerived().TransformTemplateArguments( 
+            templateArgs.getArgumentArray(), templateArgs.size(), TransArgs))
+        {
+            return ExprError();
+        }
+
+        ExprResult result = SemaRef.BuildMemberReferenceExpr(
+            Base.get(), BaseType,
+            E->getOperatorLoc(), E->isArrow(),
+            SS, TemplateKWLoc,
+            FirstQualifierInScope,
+            InvokeNameInfoTransformed,
+            &TransArgs, /*S*/nullptr );
+          
+        ( (Expr*) result.get() )->setEGInvocationViaDependantExpr();
+          
+        return result;
+      
+  }
+  else
+  {
+        DeclarationNameInfo NameInfo
+            = getDerived().TransformDeclarationNameInfo(E->getMemberNameInfo());
+        if (!NameInfo.getName())
+            return ExprError();
+
+      if (!E->hasExplicitTemplateArgs()) {
+        // This is a reference to a member without an explicitly-specified
+        // template argument list. Optimize for this common case.
+        if (!getDerived().AlwaysRebuild() &&
+            Base.get() == OldBase &&
+            BaseType == E->getBaseType() &&
+            QualifierLoc == E->getQualifierLoc() &&
+            NameInfo.getName() == E->getMember() &&
+            FirstQualifierInScope == E->getFirstQualifierFoundInScope())
+          return E;
+
+        return getDerived().RebuildCXXDependentEGInvokeExpr(Base.get(),
+                                                           BaseType,
+                                                           E->isArrow(),
+                                                           E->getOperatorLoc(),
+                                                           QualifierLoc,
+                                                           TemplateKWLoc,
+                                                           FirstQualifierInScope,
+                                                           NameInfo,
+                                                           /*TemplateArgs*/nullptr);
+      }
+
+      TemplateArgumentListInfo TransArgs(E->getLAngleLoc(), E->getRAngleLoc());
+      if (getDerived().TransformTemplateArguments(E->getTemplateArgs(),
+                                                  E->getNumTemplateArgs(),
+                                                  TransArgs))
+        return ExprError();
+
+      return getDerived().RebuildCXXDependentEGInvokeExpr(Base.get(),
+                                                         BaseType,
+                                                         E->isArrow(),
+                                                         E->getOperatorLoc(),
+                                                         QualifierLoc,
+                                                         TemplateKWLoc,
+                                                         FirstQualifierInScope,
+                                                         NameInfo,
+                                                         &TransArgs);
+  }
+}
+//EG END
 
 template <typename Derived>
 ExprResult TreeTransform<Derived>::TransformUnresolvedMemberExpr(

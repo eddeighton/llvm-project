@@ -281,6 +281,9 @@ PUNCTUATOR(caretcaret,            "^^")
 //   WCHARSUPPORT - This is a keyword if 'wchar_t' is a built-in type
 //   CHAR8SUPPORT - This is a keyword if 'char8_t' is a built-in type
 //
+//EG BEGIN
+//   KEYEG - This is an eg keyword
+//EG END
 KEYWORD(auto                        , KEYALL)
 KEYWORD(break                       , KEYALL)
 KEYWORD(case                        , KEYALL)
@@ -725,6 +728,24 @@ KEYWORD(__builtin_sycl_unique_stable_name, KEYSYCL)
 // Clang-specific keywords enabled only in testing.
 TESTING_KEYWORD(__unknown_anytype , KEYALL)
 
+//EG BEGIN
+//===----------------------------------------------------------------------===//
+// eg keywords.
+//===----------------------------------------------------------------------===//
+
+KEYWORD(object, KEYEG)
+KEYWORD(function, KEYEG)
+KEYWORD(event, KEYEG)
+KEYWORD(action, KEYEG)
+KEYWORD(link, KEYEG)
+KEYWORD(dim, KEYEG)
+KEYWORD(include, KEYEG)
+KEYWORD(dependency, KEYEG)
+KEYWORD(abstract, KEYEG)
+KEYWORD(interface, KEYEG)
+
+KEYWORD(__eg_result_type, KEYCXX)
+//EG END
 
 //===----------------------------------------------------------------------===//
 // Objective-C @-preceded keywords.

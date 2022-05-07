@@ -1170,6 +1170,40 @@ void Parser::ParseUnderlyingTypeSpecifier(DeclSpec &DS) {
   DS.setTypeofParensRange(T.getRange());
 }
 
+//EG BEGIN
+//Parse the __eg_result_type type trait used to calculate EG invocation result types
+void Parser::ParseEGResultTypeSpecifier(DeclSpec &DS) {
+  assert(Tok.is(tok::kw___eg_result_type) &&
+         "Not an eg result type specifier");
+
+  SourceLocation StartLoc = ConsumeToken();
+  BalancedDelimiterTracker T(*this, tok::l_paren);
+  if (T.expectAndConsume(diag::err_expected_lparen_after,
+                       clang_eg::eg_getResultTypeTrait(), tok::r_paren)) {
+    return;
+  }
+
+  TypeResult Result = ParseTypeName();
+  if (Result.isInvalid()) {
+    SkipUntil(tok::r_paren, StopAtSemi);
+    return;
+  }
+
+  // Match the ')'
+  T.consumeClose();
+  if (T.getCloseLocation().isInvalid())
+    return;
+
+  const char *PrevSpec = nullptr;
+  unsigned DiagID;
+  if (DS.SetTypeSpecType(DeclSpec::TST_egResultType, StartLoc, PrevSpec,
+                         DiagID, Result.get(),
+                         Actions.getASTContext().getPrintingPolicy()))
+    Diag(StartLoc, DiagID) << PrevSpec;
+  DS.setTypeofParensRange(T.getRange());
+}
+//EG END
+
 /// ParseBaseTypeSpecifier - Parse a C++ base-type-specifier which is either a
 /// class name or decltype-specifier. Note that we only check that the result
 /// names a type; semantic analysis will need to verify that the type names a

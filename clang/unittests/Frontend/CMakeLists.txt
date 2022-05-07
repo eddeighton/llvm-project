@@ -25,4 +25,5 @@ clang_target_link_libraries(FrontendTests
   clangCodeGen
   clangFrontendTool
   clangSerialization
+  clangEG
   )

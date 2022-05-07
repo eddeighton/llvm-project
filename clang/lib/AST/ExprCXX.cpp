@@ -1440,6 +1440,95 @@ CXXDependentScopeMemberExpr *CXXDependentScopeMemberExpr::CreateEmpty(
       EmptyShell(), HasTemplateKWAndArgsInfo, HasFirstQualifierFoundInScope);
 }
 
+//EG BEGIN
+CXXDependentEGInvokeExpr::CXXDependentEGInvokeExpr( QualType typePathType,
+    const ASTContext &C, Expr *Base, QualType BaseType, bool IsArrow,
+    SourceLocation OperatorLoc, NestedNameSpecifierLoc QualifierLoc,
+    SourceLocation TemplateKWLoc, NamedDecl *FirstQualifierFoundInScope,
+    DeclarationNameInfo MemberNameInfo,
+    const TemplateArgumentListInfo *TemplateArgs)
+    : Expr(CXXDependentEGInvokeExprClass, C.DependentTy, VK_LValue,
+           OK_Ordinary, true, true, true,
+           ((Base && Base->containsUnexpandedParameterPack()) ||
+            (QualifierLoc &&
+             QualifierLoc.getNestedNameSpecifier()
+                 ->containsUnexpandedParameterPack()) ||
+            MemberNameInfo.containsUnexpandedParameterPack())),
+      Base(Base), BaseType(BaseType), IsArrow(IsArrow),
+      HasTemplateKWAndArgsInfo(TemplateArgs != nullptr ||
+                               TemplateKWLoc.isValid()),
+      OperatorLoc(OperatorLoc), QualifierLoc(QualifierLoc),
+      FirstQualifierFoundInScope(FirstQualifierFoundInScope),
+      MemberNameInfo(MemberNameInfo),
+      m_pNestedDependentEGInvokeExpr( nullptr ),
+      m_pRootCallExpr(nullptr),
+      m_typePathType(typePathType){
+  if (TemplateArgs) {
+    bool Dependent = true;
+    bool InstantiationDependent = true;
+    bool ContainsUnexpandedParameterPack = false;
+    getTrailingObjects<ASTTemplateKWAndArgsInfo>()->initializeFrom(
+        TemplateKWLoc, *TemplateArgs, getTrailingObjects<TemplateArgumentLoc>(),
+        Dependent, InstantiationDependent, ContainsUnexpandedParameterPack);
+    if (ContainsUnexpandedParameterPack)
+      ExprBits.ContainsUnexpandedParameterPack = true;
+  } else if (TemplateKWLoc.isValid()) {
+    getTrailingObjects<ASTTemplateKWAndArgsInfo>()->initializeFrom(
+        TemplateKWLoc);
+  }
+}
+
+CXXDependentEGInvokeExpr *
+CXXDependentEGInvokeExpr::Create(QualType typePathType, const ASTContext &C,
+                                Expr *Base, QualType BaseType, bool IsArrow,
+                                SourceLocation OperatorLoc,
+                                NestedNameSpecifierLoc QualifierLoc,
+                                SourceLocation TemplateKWLoc,
+                                NamedDecl *FirstQualifierFoundInScope,
+                                DeclarationNameInfo MemberNameInfo,
+                                const TemplateArgumentListInfo *TemplateArgs) {
+  bool HasTemplateKWAndArgsInfo = TemplateArgs || TemplateKWLoc.isValid();
+  unsigned NumTemplateArgs = TemplateArgs ? TemplateArgs->size() : 0;
+  std::size_t Size =
+      totalSizeToAlloc<ASTTemplateKWAndArgsInfo, TemplateArgumentLoc>(
+          HasTemplateKWAndArgsInfo, NumTemplateArgs);
+
+  void *Mem = C.Allocate(Size, alignof(CXXDependentEGInvokeExpr));
+  return new (Mem) CXXDependentEGInvokeExpr(typePathType, C, Base, BaseType,
+                                               IsArrow, OperatorLoc,
+                                               QualifierLoc,
+                                               TemplateKWLoc,
+                                               FirstQualifierFoundInScope,
+                                               MemberNameInfo, TemplateArgs);
+}
+
+CXXDependentEGInvokeExpr *
+CXXDependentEGInvokeExpr::CreateEmpty(const ASTContext &C,
+                                         bool HasTemplateKWAndArgsInfo,
+                                         unsigned NumTemplateArgs) {
+  assert(NumTemplateArgs == 0 || HasTemplateKWAndArgsInfo);
+  std::size_t Size =
+      totalSizeToAlloc<ASTTemplateKWAndArgsInfo, TemplateArgumentLoc>(
+          HasTemplateKWAndArgsInfo, NumTemplateArgs);
+  void *Mem = C.Allocate(Size, alignof(CXXDependentEGInvokeExpr));
+  auto *E =
+      new (Mem) CXXDependentEGInvokeExpr(QualType(), C, nullptr, QualType(),
+                                            false, SourceLocation(),
+                                            NestedNameSpecifierLoc(),
+                                            SourceLocation(), nullptr,
+                                            DeclarationNameInfo(), nullptr);
+  E->HasTemplateKWAndArgsInfo = HasTemplateKWAndArgsInfo;
+  return E;
+}
+
+bool CXXDependentEGInvokeExpr::isImplicitAccess() const {
+  if (!Base)
+    return true;
+
+  return cast<Expr>(Base)->isImplicitCXXThis();
+}
+//EG END
+
 static bool hasOnlyNonStaticMemberFunctions(UnresolvedSetIterator begin,
                                             UnresolvedSetIterator end) {
   do {

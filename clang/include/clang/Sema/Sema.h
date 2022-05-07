@@ -2700,6 +2700,10 @@ public:
       return !DSDRE->hasExplicitTemplateArgs();
     if (auto *DSME = dyn_cast<CXXDependentScopeMemberExpr>(E.get()))
       return !DSME->hasExplicitTemplateArgs();
+//EG BEGIN
+    if (auto *DSME = dyn_cast<CXXDependentEGInvokeExpr>(E.get()))
+      return !DSME->hasExplicitTemplateArgs();
+//EG END
     // Any additional cases recognized here should also be handled by
     // diagnoseExprIntendedAsTemplateName.
     return false;
@@ -5549,6 +5553,46 @@ public:
                                    SourceLocation TemplateKWLoc,
                                    UnqualifiedId &Member,
                                    Decl *ObjCImpDecl);
+
+//EG BEGIN
+  bool eg_getInvokeLocation( SourceLocation& loc );
+  int eg_pushInvokeLocation( SourceLocation loc );
+  void eg_popInvokeLocation( int iHandle );
+private:
+  std::vector< SourceLocation > eg_invokeLocations;
+public:
+
+  ExprResult ActOnEgMemberInvocation(Scope *S, Expr *Base,
+                                        CXXScopeSpec &SS,
+                                       ParsedType TypeRep,
+                                       bool bIsArrow,
+                                       SourceLocation openLoc,
+                                       MultiExprArg exprs,
+                                       SourceLocation closeLoc );
+                                
+  ExprResult ActOnAmbiguousEGInvokeMemberAccessExpr( ParsedType TypeRep,
+                                            Scope *S, Expr *Base,
+                                           SourceLocation OpLoc,
+                                           tok::TokenKind OpKind,
+                                           CXXScopeSpec &SS,
+                                           SourceLocation TemplateKWLoc,
+                                           UnqualifiedId &Id,
+                                           Decl *ObjCImpDecl);
+                                           
+  ExprResult BuildEgThisInvocationExpr( TypeSourceInfo *TInfo,
+                                 SourceLocation LParenOrBraceLoc,
+                                 MultiExprArg exprs,
+                                 SourceLocation RParenOrBraceLoc );
+
+  ExprResult BuildEgInvocationExpr( Expr* Base,
+                                    Scope *S, 
+                                    CXXScopeSpec& SS,
+                                    bool isPtr,
+                                   TypeSourceInfo *TInfo,
+                                   SourceLocation LParenOrBraceLoc,
+                                   MultiExprArg exprs,
+                                   SourceLocation RParenOrBraceLoc );
+//EG END
 
   MemberExpr *
   BuildMemberExpr(Expr *Base, bool IsArrow, SourceLocation OpLoc,

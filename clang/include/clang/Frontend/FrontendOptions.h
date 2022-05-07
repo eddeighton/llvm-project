@@ -499,6 +499,23 @@ public:
   /// Minimum time granularity (in microseconds) traced by time profiler.
   unsigned TimeTraceGranularity;
 
+//EG BEGIN
+  /// EG Plugin DLL File
+  std::string EGPluginDllPath;
+
+  /// EG Database File
+  std::string EGDatabasePath;
+  
+  /// EG C++ File to generate
+  std::string EGCXXFile;
+  
+  /// EG Translation Unit Database File
+  std::string EGTranslationUnitDatabasePath;
+  
+  /// EG Translation Unit ID
+  unsigned EGTranslationUnitID;
+//EG END
+
 public:
   FrontendOptions()
       : DisableFree(false), RelocatablePCH(false), ShowHelp(false),

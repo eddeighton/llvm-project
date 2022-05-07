@@ -291,6 +291,9 @@ protected:
     friend class CallExpr; // ctor
     friend class CXXConstructExpr; // ctor
     friend class CXXDependentScopeMemberExpr; // ctor
+//EG BEGIN
+    friend class CXXDependentEGInvokeExpr; // ctor
+//EG END
     friend class CXXNewExpr; // ctor
     friend class CXXUnresolvedConstructExpr; // ctor
     friend class DeclRefExpr; // computeDependence
@@ -313,6 +316,9 @@ protected:
     unsigned ValueKind : 2;
     unsigned ObjectKind : 3;
     unsigned /*ExprDependence*/ Dependent : llvm::BitWidth<ExprDependence>;
+//EG BEGIN
+    unsigned IsEGInvocationViaDependantExpr : 1;
+//EG END
   };
   enum { NumExprBits = NumStmtBits + 5 + llvm::BitWidth<ExprDependence> };
 

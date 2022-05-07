@@ -1699,6 +1699,145 @@ static ExprResult LookupMemberExpr(Sema &S, LookupResult &R,
   return ExprError();
 }
 
+//EG BEGIN
+ExprResult Sema::ActOnAmbiguousEGInvokeMemberAccessExpr( ParsedType typePathParsedType,
+                                        Scope *S, Expr *Base,
+                                       SourceLocation OpLoc,
+                                       tok::TokenKind OpKind,
+                                       CXXScopeSpec &SS,
+                                       SourceLocation TemplateKWLoc,
+                                       UnqualifiedId &Id,
+                                       Decl *ObjCImpDecl) {
+                                           
+  if (SS.isSet() && SS.isInvalid())
+    return ExprError();
+
+    if( !typePathParsedType )
+        return ExprError();
+
+    TypeSourceInfo *TInfo;
+    QualType typePathType = GetTypeFromParser( typePathParsedType, &TInfo );
+    if( !TInfo )
+        TInfo = Context.getTrivialTypeSourceInfo( typePathType, SourceLocation() );
+
+  // Warn about the explicit constructor calls Microsoft extension.
+  if (getLangOpts().MicrosoftExt &&
+      Id.getKind() == UnqualifiedIdKind::IK_ConstructorName)
+    Diag(Id.getSourceRange().getBegin(),
+         diag::ext_ms_explicit_constructor_call);
+
+  TemplateArgumentListInfo TemplateArgsBuffer;
+
+  // Decompose the name into its component parts.
+  DeclarationNameInfo NameInfo;
+  const TemplateArgumentListInfo *TemplateArgs;
+  DecomposeUnqualifiedId(Id, TemplateArgsBuffer,
+                         NameInfo, TemplateArgs);
+
+  DeclarationName Name = NameInfo.getName();
+  bool IsArrow = (OpKind == tok::arrow);
+
+  NamedDecl *FirstQualifierInScope
+    = (!SS.isSet() ? nullptr : FindFirstQualifierInScope(S, SS.getScopeRep()));
+
+  // This is a postfix expression, so get rid of ParenListExprs.
+  ExprResult Result = MaybeConvertParenListExprToParenExpr(S, Base);
+  if (Result.isInvalid()) return ExprError();
+  Base = Result.get();
+
+  assert (Base->getType()->isDependentType() || Name.isDependentName() ||
+      isDependentScopeSpecifier(SS));
+      
+  // Even in dependent contexts, try to diagnose base expressions with
+  // obviously wrong types, e.g.:
+  //
+  // T* t;
+  // t.f;
+  //
+  // In Obj-C++, however, the above expression is valid, since it could be
+  // accessing the 'f' property if T is an Obj-C interface. The extra check
+  // allows this, while still reporting an error if T is a struct pointer.
+  if (!IsArrow) {
+    const PointerType *PT = Base->getType()->getAs<PointerType>();
+    if (PT && (!getLangOpts().ObjC ||
+               PT->getPointeeType()->isRecordType())) {
+      assert(Base && "cannot happen with implicit member accesses");
+      Diag(OpLoc, diag::err_typecheck_member_reference_struct_union)
+        << Base->getType() << Base->getSourceRange() << NameInfo.getSourceRange();
+      return ExprError();
+    }
+  }
+
+  assert(Base->getType()->isDependentType() ||
+         NameInfo.getName().isDependentName() ||
+         isDependentScopeSpecifier(SS));
+
+  // Get the type being accessed in Base->getType().  If this is an arrow, the Base
+  // must have pointer type, and the accessed type is the pointee.
+  return CXXDependentEGInvokeExpr::Create( typePathType,
+      Context, Base, Base->getType(), IsArrow, OpLoc,
+      SS.getWithLocInContext(Context), TemplateKWLoc, FirstQualifierInScope,
+      NameInfo, TemplateArgs);
+}
+             
+bool Sema::eg_getInvokeLocation( SourceLocation& loc )
+{
+    if( !eg_invokeLocations.empty() )
+    {
+        loc = eg_invokeLocations.back();
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+int Sema::eg_pushInvokeLocation( SourceLocation loc )
+{
+    eg_invokeLocations.push_back( loc );
+    return eg_invokeLocations.size();
+}
+
+void Sema::eg_popInvokeLocation( int iHandle )
+{
+    assert( eg_invokeLocations.size() == iHandle );
+    eg_invokeLocations.pop_back();
+}
+  
+ExprResult Sema::ActOnEgMemberInvocation(Scope *S, Expr *Base,
+                                        CXXScopeSpec &SS,
+                                       ParsedType TypeRep,
+                                       bool bIsArrow,
+                                       SourceLocation openLoc,
+                                       MultiExprArg exprs,
+                                       SourceLocation closeLoc  )
+{
+    if (SS.isSet() && SS.isInvalid())
+        return ExprError();
+
+    if( !TypeRep )
+        return ExprError();
+
+    TypeSourceInfo *TInfo;
+    QualType Ty = GetTypeFromParser( TypeRep, &TInfo );
+    if( !TInfo )
+        TInfo = Context.getTrivialTypeSourceInfo( Ty, SourceLocation() );
+
+    SourceLocation Loc = TInfo->getTypeLoc().getBeginLoc();
+    
+    if( Ty->isDependentType() )
+        return ExprError();
+    
+    ExprResult Result = MaybeConvertParenListExprToParenExpr( S, Base );
+    if( Result.isInvalid() ) return ExprError();
+    Base = Result.get();
+    
+    return BuildEgInvocationExpr( Base, S, SS, bIsArrow, 
+        TInfo, openLoc, exprs, closeLoc );
+}
+//EG END
+
 /// The main callback when the parser finds something like
 ///   expression . [nested-name-specifier] identifier
 ///   expression -> [nested-name-specifier] identifier

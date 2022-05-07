@@ -15,4 +15,5 @@ clang_target_link_libraries(tool-template
   clangFrontend
   clangTooling
   clangToolingRefactoring
+  clangEG
   )

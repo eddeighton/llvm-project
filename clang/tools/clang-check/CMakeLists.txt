@@ -19,4 +19,5 @@ clang_target_link_libraries(clang-check
   clangStaticAnalyzerFrontend
   clangTooling
   clangToolingSyntax
+  clangEG
   )

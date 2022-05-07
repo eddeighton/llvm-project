@@ -4152,6 +4152,12 @@ void Parser::ParseDeclarationSpecifiers(DeclSpec &DS,
       ParseUnderlyingTypeSpecifier(DS);
       continue;
 
+//EG BEGIN
+    case tok::kw___eg_result_type:
+      ParseEGResultTypeSpecifier(DS);
+      continue;
+//EG END
+
     case tok::kw__Atomic:
       // C11 6.7.2.4/4:
       //   If the _Atomic keyword is immediately followed by a left parenthesis,
@@ -6211,7 +6217,9 @@ void Parser::ParseDirectDeclarator(Declarator &D) {
     }
   }
 
-  if (Tok.is(tok::l_paren)) {
+  //EG BEGIN
+  if (Tok.is(tok::l_paren) && ( !clang_eg::eg_isEGEnabled() || !isEGTypePathParsing() ) ) {
+  //EG END
     // If this might be an abstract-declarator followed by a direct-initializer,
     // check whether this is a valid declarator chunk. If it can't be, assume
     // that it's an initializer instead.
@@ -6308,7 +6316,9 @@ void Parser::ParseDirectDeclarator(Declarator &D) {
     MaybeParseCXX11Attributes(D);
 
   while (true) {
-    if (Tok.is(tok::l_paren)) {
+    //EG BEGIN
+    if (Tok.is(tok::l_paren) && ( !clang_eg::eg_isEGEnabled() || !isEGTypePathParsing() ) ) {
+    //EG END
       bool IsFunctionDeclaration = D.isFunctionDeclaratorAFunctionDeclaration();
       // Enter function-declaration scope, limiting any declarators to the
       // function prototype scope, including parameter declarators.

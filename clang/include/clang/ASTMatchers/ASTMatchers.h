@@ -1453,6 +1453,12 @@ extern const internal::VariadicDynCastAllOfMatcher<Stmt,
                                                    CXXDependentScopeMemberExpr>
     cxxDependentScopeMemberExpr;
 
+//EG BEGIN
+extern const internal::VariadicDynCastAllOfMatcher<Stmt,
+                                                   CXXDependentEGInvokeExpr>
+    cxxDependentEGInvokeExpr;
+//EG END
+
 /// Matches call expressions.
 ///
 /// Example matches x.y() and y()
@@ -6140,7 +6146,11 @@ AST_MATCHER(CXXMethodDecl, isUserProvided) {
 ///   matches this->f<T>, f<T>
 AST_POLYMORPHIC_MATCHER(
     isArrow, AST_POLYMORPHIC_SUPPORTED_TYPES(MemberExpr, UnresolvedMemberExpr,
-                                             CXXDependentScopeMemberExpr)) {
+                                             CXXDependentScopeMemberExpr
+//EG BEGIN
+                                            ,CXXDependentEGInvokeExpr
+//EG END
+)) {
   return Node.isArrow();
 }
 
@@ -6311,7 +6321,10 @@ AST_MATCHER_P(MemberExpr, member,
 AST_POLYMORPHIC_MATCHER_P(
     hasObjectExpression,
     AST_POLYMORPHIC_SUPPORTED_TYPES(MemberExpr, UnresolvedMemberExpr,
-                                    CXXDependentScopeMemberExpr),
+                                    CXXDependentScopeMemberExpr,
+//EG BEGIN
+                                    CXXDependentEGInvokeExpr),
+//EG END
     internal::Matcher<Expr>, InnerMatcher) {
   if (const auto *E = dyn_cast<UnresolvedMemberExpr>(&Node))
     if (E->isImplicitAccess())
@@ -6319,6 +6332,11 @@ AST_POLYMORPHIC_MATCHER_P(
   if (const auto *E = dyn_cast<CXXDependentScopeMemberExpr>(&Node))
     if (E->isImplicitAccess())
       return false;
+//EG BEGIN
+  if (const auto *E = dyn_cast<CXXDependentEGInvokeExpr>(&Node))
+    if (E->isImplicitAccess())
+      return false;
+//EG END
   return InnerMatcher.matches(*Node.getBase(), Finder, Builder);
 }
 

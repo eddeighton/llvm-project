@@ -16,6 +16,7 @@ clang_target_link_libraries(clang-rename
   clangTooling
   clangToolingCore
   clangToolingRefactoring
+  clangEG
   )
 
 install(PROGRAMS clang-rename.py

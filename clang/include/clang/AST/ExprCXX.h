@@ -3557,6 +3557,243 @@ public:
   }
 };
 
+//EG BEGIN
+class CXXDependentEGInvokeExpr final
+    : public Expr,
+      private llvm::TrailingObjects<CXXDependentEGInvokeExpr,
+                                    ASTTemplateKWAndArgsInfo,
+                                    TemplateArgumentLoc> 
+{
+  /// The expression for the base pointer or class reference,
+  /// e.g., the \c x in x.f.  Can be null in implicit accesses.
+  Stmt *Base;
+  
+  /// The type of the base expression.  Never null, even for
+  /// implicit accesses.
+  QualType BaseType;
+    
+  /// Whether this member expression used the '->' operator or
+  /// the '.' operator.
+  bool IsArrow : 1;
+  
+  /// Whether this member expression has info for explicit template
+  /// keyword and arguments.
+  bool HasTemplateKWAndArgsInfo : 1;
+  
+  /// The location of the '->' or '.' operator.
+  SourceLocation OperatorLoc;
+
+  /// The nested-name-specifier that precedes the member name, if any.
+  NestedNameSpecifierLoc QualifierLoc;
+  
+  /// In a qualified member access expression such as t->Base::f, this
+  /// member stores the resolves of name lookup in the context of the member
+  /// access expression, to be used at instantiation time.
+  ///
+  /// FIXME: This member, along with the QualifierLoc, could
+  /// be stuck into a structure that is optionally allocated at the end of
+  /// the CXXDependentScopeMemberExpr, to save space in the common case.
+  NamedDecl *FirstQualifierFoundInScope;
+
+  /// The member to which this member expression refers, which
+  /// can be name, overloaded operator, or destructor.
+  ///
+  /// FIXME: could also be a template-id
+  DeclarationNameInfo MemberNameInfo;
+  
+  CXXDependentEGInvokeExpr* m_pNestedDependentEGInvokeExpr;
+  CallExpr* m_pRootCallExpr;
+  QualType m_typePathType;
+
+  size_t numTrailingObjects(OverloadToken<ASTTemplateKWAndArgsInfo>) const {
+    return HasTemplateKWAndArgsInfo ? 1 : 0;
+  }
+
+  CXXDependentEGInvokeExpr( QualType typePathType, const ASTContext &C, Expr *Base,
+                              QualType BaseType, bool IsArrow,
+                              SourceLocation OperatorLoc,
+                              NestedNameSpecifierLoc QualifierLoc,
+                              SourceLocation TemplateKWLoc,
+                              NamedDecl *FirstQualifierFoundInScope,
+                              DeclarationNameInfo MemberNameInfo,
+                              const TemplateArgumentListInfo *TemplateArgs);
+  
+  
+public:
+  friend class ASTStmtReader;
+  friend class ASTStmtWriter;
+  friend TrailingObjects;
+
+  CXXDependentEGInvokeExpr(const ASTContext &C, Expr *Base,
+                              QualType BaseType, bool IsArrow,
+                              SourceLocation OperatorLoc,
+                              NestedNameSpecifierLoc QualifierLoc,
+                              NamedDecl *FirstQualifierFoundInScope,
+                              DeclarationNameInfo MemberNameInfo);
+
+  static CXXDependentEGInvokeExpr *
+  Create( QualType typePathType, const ASTContext &C, Expr *Base, QualType BaseType, bool IsArrow,
+         SourceLocation OperatorLoc, NestedNameSpecifierLoc QualifierLoc,
+         SourceLocation TemplateKWLoc, NamedDecl *FirstQualifierFoundInScope,
+         DeclarationNameInfo MemberNameInfo,
+         const TemplateArgumentListInfo *TemplateArgs);
+
+  static CXXDependentEGInvokeExpr *
+  CreateEmpty(const ASTContext &C, bool HasTemplateKWAndArgsInfo,
+              unsigned NumTemplateArgs);
+
+  /// True if this is an implicit access, i.e. one in which the
+  /// member being accessed was not written in the source.  The source
+  /// location of the operator is invalid in this case.
+  bool isImplicitAccess() const;
+
+  /// Retrieve the base object of this member expressions,
+  /// e.g., the \c x in \c x.m.
+  Expr *getBase() const {
+    assert(!isImplicitAccess());
+    return cast<Expr>(Base);
+  }
+
+  QualType getBaseType() const { return BaseType; }
+
+  /// Determine whether this member expression used the '->'
+  /// operator; otherwise, it used the '.' operator.
+  bool isArrow() const { return IsArrow; }
+
+  /// Retrieve the location of the '->' or '.' operator.
+  SourceLocation getOperatorLoc() const { return OperatorLoc; }
+
+  /// Retrieve the nested-name-specifier that qualifies the member
+  /// name.
+  NestedNameSpecifier *getQualifier() const {
+    return QualifierLoc.getNestedNameSpecifier();
+  }
+
+  /// Retrieve the nested-name-specifier that qualifies the member
+  /// name, with source location information.
+  NestedNameSpecifierLoc getQualifierLoc() const { return QualifierLoc; }
+
+  /// Retrieve the first part of the nested-name-specifier that was
+  /// found in the scope of the member access expression when the member access
+  /// was initially parsed.
+  ///
+  /// This function only returns a useful result when member access expression
+  /// uses a qualified member name, e.g., "x.Base::f". Here, the declaration
+  /// returned by this function describes what was found by unqualified name
+  /// lookup for the identifier "Base" within the scope of the member access
+  /// expression itself. At template instantiation time, this information is
+  /// combined with the results of name lookup into the type of the object
+  /// expression itself (the class type of x).
+  NamedDecl *getFirstQualifierFoundInScope() const {
+    return FirstQualifierFoundInScope;
+  }
+
+  /// Retrieve the name of the member that this expression
+  /// refers to.
+  const DeclarationNameInfo &getMemberNameInfo() const {
+    return MemberNameInfo;
+  }
+  
+  CXXDependentEGInvokeExpr* getNested() const { return m_pNestedDependentEGInvokeExpr; }
+  void setNested( CXXDependentEGInvokeExpr* pNested ) { m_pNestedDependentEGInvokeExpr = pNested; }
+  CallExpr* getRootCallExpr() const { return m_pRootCallExpr; }
+  void setRootCallExpr( CallExpr* pCallExpr ){ m_pRootCallExpr = pCallExpr; }
+  QualType getTypePathType() const { return m_typePathType; }
+
+  /// Retrieve the name of the member that this expression
+  /// refers to.
+  DeclarationName getMember() const { return MemberNameInfo.getName(); }
+
+  // Retrieve the location of the name of the member that this
+  // expression refers to.
+  SourceLocation getMemberLoc() const { return MemberNameInfo.getLoc(); }
+
+  /// Retrieve the location of the template keyword preceding the
+  /// member name, if any.
+  SourceLocation getTemplateKeywordLoc() const {
+    if (!HasTemplateKWAndArgsInfo) return SourceLocation();
+    return getTrailingObjects<ASTTemplateKWAndArgsInfo>()->TemplateKWLoc;
+  }
+
+  /// Retrieve the location of the left angle bracket starting the
+  /// explicit template argument list following the member name, if any.
+  SourceLocation getLAngleLoc() const {
+    if (!HasTemplateKWAndArgsInfo) return SourceLocation();
+    return getTrailingObjects<ASTTemplateKWAndArgsInfo>()->LAngleLoc;
+  }
+
+  /// Retrieve the location of the right angle bracket ending the
+  /// explicit template argument list following the member name, if any.
+  SourceLocation getRAngleLoc() const {
+    if (!HasTemplateKWAndArgsInfo) return SourceLocation();
+    return getTrailingObjects<ASTTemplateKWAndArgsInfo>()->RAngleLoc;
+  }
+
+  /// Determines whether the member name was preceded by the template keyword.
+  bool hasTemplateKeyword() const { return getTemplateKeywordLoc().isValid(); }
+
+  /// Determines whether this member expression actually had a C++
+  /// template argument list explicitly specified, e.g., x.f<int>.
+  bool hasExplicitTemplateArgs() const { return getLAngleLoc().isValid(); }
+
+  /// Copies the template arguments (if present) into the given
+  /// structure.
+  void copyTemplateArgumentsInto(TemplateArgumentListInfo &List) const {
+    if (hasExplicitTemplateArgs())
+      getTrailingObjects<ASTTemplateKWAndArgsInfo>()->copyInto(
+          getTrailingObjects<TemplateArgumentLoc>(), List);
+  }
+
+  /// Retrieve the template arguments provided as part of this
+  /// template-id.
+  const TemplateArgumentLoc *getTemplateArgs() const {
+    if (!hasExplicitTemplateArgs())
+      return nullptr;
+
+    return getTrailingObjects<TemplateArgumentLoc>();
+  }
+
+  /// Retrieve the number of template arguments provided as part of this
+  /// template-id.
+  unsigned getNumTemplateArgs() const {
+    if (!hasExplicitTemplateArgs())
+      return 0;
+
+    return getTrailingObjects<ASTTemplateKWAndArgsInfo>()->NumTemplateArgs;
+  }
+
+  ArrayRef<TemplateArgumentLoc> template_arguments() const {
+    return {getTemplateArgs(), getNumTemplateArgs()};
+  }
+
+  SourceLocation getBeginLoc() const LLVM_READONLY {
+    if (!isImplicitAccess())
+      return Base->getBeginLoc();
+    if (getQualifier())
+      return getQualifierLoc().getBeginLoc();
+    return MemberNameInfo.getBeginLoc();
+  }
+
+  SourceLocation getEndLoc() const LLVM_READONLY {
+    if (hasExplicitTemplateArgs())
+      return getRAngleLoc();
+    return MemberNameInfo.getEndLoc();
+  }
+
+  static bool classof(const Stmt *T) {
+    return T->getStmtClass() == CXXDependentEGInvokeExprClass;
+  }
+
+  // Iterators
+  child_range children() {
+    if (isImplicitAccess())
+      return child_range(child_iterator(), child_iterator());
+    return child_range(&Base, &Base + 1);
+  }
+  
+};
+//EG END
+
 /// Represents a C++ member access expression where the actual
 /// member referenced could not be resolved because the base
 /// expression or the member name was dependent.

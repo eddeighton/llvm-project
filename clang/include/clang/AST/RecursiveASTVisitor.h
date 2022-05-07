@@ -2433,6 +2433,17 @@ DEF_TRAVERSE_STMT(CXXDependentScopeMemberExpr, {
   }
 })
 
+//EG BEGIN
+DEF_TRAVERSE_STMT(CXXDependentEGInvokeExpr, {
+  TRY_TO(TraverseNestedNameSpecifierLoc(S->getQualifierLoc()));
+  TRY_TO(TraverseDeclarationNameInfo(S->getMemberNameInfo()));
+  if (S->hasExplicitTemplateArgs()) {
+    TRY_TO(TraverseTemplateArgumentLocsHelper(S->getTemplateArgs(),
+                                              S->getNumTemplateArgs()));
+  }
+})
+//EG END
+
 DEF_TRAVERSE_STMT(DeclRefExpr, {
   TRY_TO(TraverseNestedNameSpecifierLoc(S->getQualifierLoc()));
   TRY_TO(TraverseDeclarationNameInfo(S->getNameInfo()));

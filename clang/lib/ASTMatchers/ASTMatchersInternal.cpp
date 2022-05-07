@@ -814,6 +814,10 @@ const internal::VariadicDynCastAllOfMatcher<Stmt, UnresolvedMemberExpr>
     unresolvedMemberExpr;
 const internal::VariadicDynCastAllOfMatcher<Stmt, CXXDependentScopeMemberExpr>
     cxxDependentScopeMemberExpr;
+//EG BEGIN
+const internal::VariadicDynCastAllOfMatcher<Stmt, CXXDependentEGInvokeExpr>
+    cxxDependentEGInvokeExpr;
+//EG END
 const internal::VariadicDynCastAllOfMatcher<Stmt, CallExpr> callExpr;
 const internal::VariadicDynCastAllOfMatcher<Stmt, LambdaExpr> lambdaExpr;
 const internal::VariadicDynCastAllOfMatcher<Stmt, CXXMemberCallExpr>

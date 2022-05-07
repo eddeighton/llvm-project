@@ -1295,6 +1295,13 @@ void TextNodeDumper::VisitCXXDependentScopeMemberExpr(
   OS << " " << (Node->isArrow() ? "->" : ".") << Node->getMember();
 }
 
+//EG BEGIN
+void TextNodeDumper::VisitCXXDependentEGInvokeExpr(
+    const CXXDependentEGInvokeExpr *Node) {
+  OS << " " << (Node->isArrow() ? "->" : ".") << Node->getMember();
+}
+//EG END
+
 void TextNodeDumper::VisitObjCMessageExpr(const ObjCMessageExpr *Node) {
   OS << " selector=";
   Node->getSelector().print(OS);
@@ -1554,6 +1561,13 @@ void TextNodeDumper::VisitUnaryTransformType(const UnaryTransformType *T) {
   case UnaryTransformType::EnumUnderlyingType:
     OS << " underlying_type";
     break;
+//EG BEGIN
+  case UnaryTransformType::EGResultType:
+    //TODO fix cyclic dependency so can use clangEG here...
+    OS <<  " underlying_type";
+    //OS << clang_eg::eg_getResultTypeTrait();
+    break;
+//EG END
   }
 }
 

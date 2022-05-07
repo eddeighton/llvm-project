@@ -1603,4 +1603,13 @@ def ext_hlsl_access_specifiers : ExtWarn<
   "access specifiers are a clang HLSL extension">,
   InGroup<HLSLExtension>;
 
+//EG BEGIN
+let CategoryName = "MEGA Issue" in {
+def err_mega_generic_error : Error<
+  "MEGA error: '%0'">;
+def warn_mega_generic_warning : Warning<
+  "MEGA warning: '%0'">;
+}
+//EG END
+
 } // end of Parser diagnostics

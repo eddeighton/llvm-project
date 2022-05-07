@@ -5736,6 +5736,19 @@ def print_dependency_directives_minimized_source : Flag<["-"],
   HelpText<"Print the output of the dependency directives source minimizer">;
 }
 
+//EG BEGIN
+def egdll : Joined<["-"], "egdll=">,
+  HelpText<"EG plugin dll">;
+def egdb : Joined<["-"], "egdb=">,
+  HelpText<"EG database file">;
+def egcxx : Joined<["-"], "egcxx=">,
+  HelpText<"EG to c++ file to generate">;
+def egtu : Joined<["-"], "egtu=">,
+  HelpText<"EG translation unit database file">;
+def egtuid : Joined<["-"], "egtuid=">,
+  HelpText<"EG translation unit id">;
+//EG END
+
 defm emit_llvm_uselists : BoolOption<"", "emit-llvm-uselists",
   CodeGenOpts<"EmitLLVMUseLists">, DefaultFalse,
   PosFlag<SetTrue, [], "Preserve">,

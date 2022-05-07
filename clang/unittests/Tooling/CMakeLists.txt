@@ -83,6 +83,7 @@ clang_target_link_libraries(ToolingTests
   clangToolingInclusions
   clangToolingRefactoring
   clangTransformer
+  clangEG
   )
 
 target_link_libraries(ToolingTests

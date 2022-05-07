@@ -161,7 +161,11 @@ Parser::TPResult Parser::TryConsumeDeclarationSpecifier() {
     LLVM_FALLTHROUGH;
   case tok::kw_typeof:
   case tok::kw___attribute:
-  case tok::kw___underlying_type: {
+  case tok::kw___underlying_type: 
+//EG BEGIN
+  case tok::kw___eg_result_type: 
+//EG END
+  {
     ConsumeToken();
     if (Tok.isNot(tok::l_paren))
       return TPResult::Error;
@@ -1271,7 +1275,15 @@ Parser::isCXXDeclarationSpecifier(Parser::TPResult BracedCastResult,
     if (!getLangOpts().ObjC && Next.is(tok::identifier))
       return TPResult::True;
 
-    if (Next.isNot(tok::coloncolon) && Next.isNot(tok::less)) {
+//EG BEGIN
+    //check for period to support period delimited eg type paths
+    if (    Next.isNot(tok::coloncolon) && 
+            Next.isNot(tok::less) && 
+            ( !clang_eg::eg_isEGEnabled() || Next.isNot(tok::period) )
+            ) 
+    {
+//EG END
+    
       // Determine whether this is a valid expression. If not, we will hit
       // a parse error one way or another. In that case, tell the caller that
       // this is ambiguous. Typo-correct to type and expression keywords and
@@ -1642,6 +1654,23 @@ Parser::isCXXDeclarationSpecifier(Parser::TPResult BracedCastResult,
   case tok::annot_decltype:
 #define GENERIC_IMAGE_TYPE(ImgType, Id) case tok::kw_##ImgType##_t:
 #include "clang/Basic/OpenCLImageTypes.def"
+
+//EG BEGIN
+    if (NextToken().is(tok::l_paren) && clang_eg::eg_isEGEnabled() )
+    {
+        //if this is an eg type then always return true since it followed by l_paren
+        //MUST be an eg invocation
+        switch( clang_eg::eg_isPossibleEGTypeIdentifierDecl( Tok, isEGTypePathParsing() ) )
+        {
+            case 0: return TPResult::False;
+            case 1: return TPResult::True;
+            case 2: 
+            default:return TPResult::Ambiguous;
+        }
+    }
+    else 
+//EG END
+
     if (NextToken().is(tok::l_paren))
       return TPResult::Ambiguous;
 
@@ -1684,6 +1713,9 @@ Parser::isCXXDeclarationSpecifier(Parser::TPResult BracedCastResult,
 
   // C++0x type traits support
   case tok::kw___underlying_type:
+//EG BEGIN
+  case tok::kw___eg_result_type: 
+//EG END
     return TPResult::True;
 
   // C11 _Atomic
@@ -1722,6 +1754,9 @@ bool Parser::isCXXDeclarationSpecifierAType() {
   case tok::annot_typename:
   case tok::kw_typeof:
   case tok::kw___underlying_type:
+//EG BEGIN
+  case tok::kw___eg_result_type: 
+//EG END
     return true;
 
     // elaborated-type-specifier

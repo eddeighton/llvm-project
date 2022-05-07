@@ -19,6 +19,7 @@ clang_target_link_libraries(clangReorderFields
   clangLex
   clangSerialization
   clangToolingCore
+  clangEG
   )
 
 add_subdirectory(tool)

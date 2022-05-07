@@ -1964,6 +1964,27 @@ void ASTStmtReader::VisitCXXDependentScopeMemberExpr(
   E->MemberNameInfo = Record.readDeclarationNameInfo();
 }
 
+//EG BEGIN
+void
+ASTStmtReader::VisitCXXDependentEGInvokeExpr(CXXDependentEGInvokeExpr *E){
+  VisitExpr(E);
+
+  if (Record.readInt()) // HasTemplateKWAndArgsInfo
+    ReadTemplateKWAndArgsInfo(
+        *E->getTrailingObjects<ASTTemplateKWAndArgsInfo>(),
+        E->getTrailingObjects<TemplateArgumentLoc>(),
+        /*NumTemplateArgs=*/Record.readInt());
+
+  E->Base = Record.readSubExpr();
+  E->BaseType = Record.readType();
+  E->IsArrow = Record.readInt();
+  E->OperatorLoc = ReadSourceLocation();
+  E->QualifierLoc = Record.readNestedNameSpecifierLoc();
+  E->FirstQualifierFoundInScope = ReadDeclAs<NamedDecl>();
+  ReadDeclarationNameInfo(E->MemberNameInfo);
+}
+//EG END
+
 void
 ASTStmtReader::VisitDependentScopeDeclRefExpr(DependentScopeDeclRefExpr *E) {
   VisitExpr(E);
@@ -3790,6 +3811,16 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
           /*HasFirstQualifierFoundInScope=*/
           Record[ASTStmtReader::NumExprFields + 2]);
       break;
+
+//EG BEGIN
+    case EXPR_CXX_DEPENDENT_EG_INVOKE:
+      S = CXXDependentEGInvokeExpr::CreateEmpty(Context,
+         /*HasTemplateKWAndArgsInfo=*/Record[ASTStmtReader::NumExprFields],
+                  /*NumTemplateArgs=*/Record[ASTStmtReader::NumExprFields]
+                                   ? Record[ASTStmtReader::NumExprFields + 1]
+                                   : 0);
+      break;
+//EG END
 
     case EXPR_CXX_DEPENDENT_SCOPE_DECL_REF:
       S = DependentScopeDeclRefExpr::CreateEmpty(Context,

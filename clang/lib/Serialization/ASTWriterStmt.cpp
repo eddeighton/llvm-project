@@ -1883,6 +1883,37 @@ void ASTStmtWriter::VisitCXXDependentScopeMemberExpr(
   Code = serialization::EXPR_CXX_DEPENDENT_SCOPE_MEMBER;
 }
 
+//EG BEGIN
+void
+ASTStmtWriter::VisitCXXDependentEGInvokeExpr(CXXDependentEGInvokeExpr *E){
+  VisitExpr(E);
+
+  // Don't emit anything here, HasTemplateKWAndArgsInfo must be
+  // emitted first.
+
+  Record.push_back(E->HasTemplateKWAndArgsInfo);
+  if (E->HasTemplateKWAndArgsInfo) {
+    const ASTTemplateKWAndArgsInfo &ArgInfo =
+        *E->getTrailingObjects<ASTTemplateKWAndArgsInfo>();
+    Record.push_back(ArgInfo.NumTemplateArgs);
+    AddTemplateKWAndArgsInfo(ArgInfo,
+                             E->getTrailingObjects<TemplateArgumentLoc>());
+  }
+
+  if (!E->isImplicitAccess())
+    Record.AddStmt(E->getBase());
+  else
+    Record.AddStmt(nullptr);
+  Record.AddTypeRef(E->getBaseType());
+  Record.push_back(E->isArrow());
+  Record.AddSourceLocation(E->getOperatorLoc());
+  Record.AddNestedNameSpecifierLoc(E->getQualifierLoc());
+  Record.AddDeclRef(E->getFirstQualifierFoundInScope());
+  Record.AddDeclarationNameInfo(E->MemberNameInfo);
+  Code = serialization::EXPR_CXX_DEPENDENT_EG_INVOKE;
+}
+//EG END
+
 void
 ASTStmtWriter::VisitDependentScopeDeclRefExpr(DependentScopeDeclRefExpr *E) {
   VisitExpr(E);

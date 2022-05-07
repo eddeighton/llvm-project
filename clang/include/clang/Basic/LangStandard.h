@@ -41,6 +41,9 @@ enum class Language : uint8_t {
   RenderScript,
   HIP,
   HLSL,
+//EG BEGIN
+  EG_CXX,
+//EG END
   ///@}
 };
 

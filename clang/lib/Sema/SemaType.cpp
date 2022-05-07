@@ -1645,6 +1645,20 @@ static QualType ConvertDeclSpecToType(TypeProcessingState &state) {
     }
     break;
 
+//EG BEGIN
+  case DeclSpec::TST_egResultType:
+    Result = S.GetTypeFromParser(DS.getRepAsType());
+    assert(!Result.isNull() && "Didn't get a type for __eg_result_type?");
+    Result = S.BuildUnaryTransformType(Result,
+                                       UnaryTransformType::EGResultType,
+                                       DeclLoc);
+    if (Result.isNull()) {
+      Result = Context.IntTy;
+      declarator.setInvalidType(true);
+    }
+    break;
+//EG END
+
   case DeclSpec::TST_auto:
   case DeclSpec::TST_decltype_auto: {
     auto AutoKW = DS.getTypeSpecType() == DeclSpec::TST_decltype_auto
@@ -6021,7 +6035,10 @@ namespace {
     }
     void VisitUnaryTransformTypeLoc(UnaryTransformTypeLoc TL) {
       // FIXME: This holds only because we only have one unary transform.
-      assert(DS.getTypeSpecType() == DeclSpec::TST_underlyingType);
+      assert(DS.getTypeSpecType() == DeclSpec::TST_underlyingType)
+//EG BEGIN
+        || ( DS.getTypeSpecType() == DeclSpec::TST_egResultType ));
+//EG END
       TL.setKWLoc(DS.getTypeSpecTypeLoc());
       TL.setParensRange(DS.getTypeofParensRange());
       assert(DS.getRepAsType());
@@ -7839,6 +7856,38 @@ static void HandleVectorSizeAttr(QualType &CurType, const ParsedAttr &Attr,
     Attr.setInvalid();
 }
 
+//EG BEGIN
+static void handleEGTypeAttribute(QualType &CurType, const ParsedAttr &Attr, Sema &S)
+{
+    // Check the attribute arguments.
+  if (Attr.getNumArgs() != 1) {
+    S.Diag(Attr.getLoc(), diag::err_attribute_wrong_number_arguments) << Attr
+                                                                      << 1;
+    Attr.setInvalid();
+    return;
+  }
+
+  Expr *SizeExpr;
+  // Special case where the argument is a template id.
+  if (Attr.isArgIdent(0)) {
+    CXXScopeSpec SS;
+    SourceLocation TemplateKWLoc;
+    UnqualifiedId Id;
+    Id.setIdentifier(Attr.getArgAsIdent(0)->Ident, Attr.getLoc());
+
+    ExprResult Size = S.ActOnIdExpression(S.getCurScope(), SS, TemplateKWLoc,
+                                          Id, false, false);
+
+    if (Size.isInvalid())
+      return;
+    SizeExpr = Size.get();
+  } else {
+    SizeExpr = Attr.getArgAsExpr(0);
+  }
+    
+}
+//EG END
+
 /// Process the OpenCL-like ext_vector_type attribute when it occurs on
 /// a type.
 static void HandleExtVectorTypeAttr(QualType &CurType, const ParsedAttr &Attr,
@@ -9117,6 +9166,24 @@ QualType Sema::BuildUnaryTransformType(QualType BaseType,
       return Context.getUnaryTransformType(BaseType, Underlying,
                                         UnaryTransformType::EnumUnderlyingType);
     }
+
+//EG BEGIN
+  case UnaryTransformType::EGResultType:
+      {
+          QualType resultType = BaseType;
+          
+          //attempt to get current invocation source loc for error reporting
+          SourceLocation invokeLocation = Loc;
+          eg_getInvokeLocation( invokeLocation );
+          
+          //ask the eg database for the return type of the invocation - this may do nothing
+          clang_eg::eg_getInvocationResultType( invokeLocation, BaseType, resultType );
+          
+          return Context.getUnaryTransformType( BaseType, resultType,
+                                            UnaryTransformType::EGResultType );
+      }
+//EG END
+
   }
   llvm_unreachable("unknown unary transform type");
 }

@@ -190,6 +190,7 @@ RegistryMaps::RegistryMaps() {
   REGISTER_MATCHER(cxxDefaultArgExpr);
   REGISTER_MATCHER(cxxDeleteExpr);
   REGISTER_MATCHER(cxxDependentScopeMemberExpr);
+  REGISTER_MATCHER(cxxDependentEGInvokeExpr);
   REGISTER_MATCHER(cxxDestructorDecl);
   REGISTER_MATCHER(cxxDynamicCastExpr);
   REGISTER_MATCHER(cxxForRangeStmt);

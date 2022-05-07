@@ -154,9 +154,24 @@ void Parser::CheckForTemplateAndDigraph(Token &Next, ParsedType ObjectType,
 bool Parser::ParseOptionalCXXScopeSpecifier(
     CXXScopeSpec &SS, ParsedType ObjectType, bool ObjectHadErrors,
     bool EnteringContext, bool *MayBePseudoDestructor, bool IsTypename,
-    IdentifierInfo **LastII, bool OnlyNamespace, bool InUsingDeclaration) {
+    IdentifierInfo **LastII, bool OnlyNamespace, bool InUsingDeclaration
+  //EG BEGIN
+    ,bool AllowEGTypePath
+  //EG END
+    ) {
   assert(getLangOpts().CPlusPlus &&
          "Call sites of this function should be guarded by checking for C++");
+
+//EG BEGIN
+  if( clang_eg::eg_isEGEnabled() && AllowEGTypePath )
+  {
+      if( ParsePossibleEGTypePath( SS, ObjectType, EnteringContext, 
+                MayBePseudoDestructor, IsTypename, LastII, OnlyNamespace ) )
+      {
+          return false;
+      }
+  }
+//EG END
 
   if (Tok.is(tok::annot_cxxscope)) {
     assert(!LastII && "want last identifier but have already annotated scope");
@@ -553,6 +568,232 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
 
   return false;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+//EG BEGIN
+bool Parser::isPossibleEGTypePath()
+{
+    bool bIsPossible = false;
+    
+    assert( clang_eg::eg_isEGEnabled() && "isPossibleEGTypePath called when EG not enabled" );
+
+    RevertingTentativeParsingAction revertingParse( *this );
+
+    int state = 0;
+    bool bContinue = true;
+    int iAngleBracketCounter = 0;
+    bool bAtleastOneDot = false;
+    while( bContinue && !isEofOrEom() )
+    {
+        switch( state )
+        {
+            case 0:
+                if( clang_eg::eg_isPossibleEGTypeIdentifier( Tok ) )
+                {
+                    if( Tok.is( tok::identifier ) )
+                    {
+                        state = 1;
+                        ConsumeToken();
+                    }
+                    else if( Tok.is( tok::annot_typename ) ||
+                             Tok.is( tok::annot_template_id ) )
+                    {
+                        state = 1;
+                        ConsumeAnnotationToken();
+                    }
+                    else
+                    {
+                        bContinue = false;
+                    }
+                }
+                else
+                {
+                    bIsPossible = false;
+                    bContinue = false;
+                }
+                break;
+            case 1:
+                if( Tok.is( tok::less ) )
+                {
+                    iAngleBracketCounter = 1;
+                    ConsumeToken();
+                    state = 2;
+                    break;
+                }
+                //fall through
+            case 3:
+                if( Tok.is( tok::period ) )
+                {
+                    bAtleastOneDot = true;
+                    state = 0;
+                    ConsumeToken();
+                }
+                else if( Tok.is( tok::coloncolon ) )
+                {
+                    state = 0;
+                    ConsumeToken();
+                }
+                //else if( Tok.is( tok::l_paren ) || 
+                //         Tok.is( tok::semi ) ||
+                //         Tok.is( tok::comma ) ||
+                //         Tok.is( tok::greater ) || 
+                //         Tok.is( tok::identifier ) )
+                //{
+                //    bIsPossible = true;
+                //    bContinue = false;
+                //}
+                else
+                {
+                    if( bAtleastOneDot )
+                        bIsPossible = true;
+                    bContinue = false;
+                }
+                break;
+            case 2:
+                if( Tok.is( tok::less ) )
+                {
+                    ++iAngleBracketCounter;
+                    ConsumeToken();
+                }
+                else if( Tok.is( tok::greater ) )
+                {
+                    --iAngleBracketCounter;
+                    ConsumeToken();
+                    if( 0 == iAngleBracketCounter )
+                    {
+                        state = 3;
+                    }
+                }
+                else
+                {
+                    ConsumeAnyToken();
+                }
+                break;
+            default:
+                break;
+
+        }
+    }
+
+    return bIsPossible;
+}
+
+bool Parser::isPossibleEGInvocation()
+{
+    bool bIsPossible = false;
+    
+    assert( clang_eg::eg_isEGEnabled() && "isPossibleEGInvocation called when EG not enabled" );
+    
+    RevertingTentativeParsingAction revertingParse( *this );
+    
+    int state = 0;
+    bool bContinue = true;
+    int iAngleBracketCounter = 0;
+    while( bContinue && !isEofOrEom() )
+    {
+        switch( state )
+        {
+            case 0:
+                if( clang_eg::eg_isPossibleEGTypeIdentifier( Tok ) )
+                {
+                    if( Tok.is( tok::identifier ) )
+                    {
+                        state = 1;
+                        ConsumeToken();
+                    }
+                    else if( Tok.is( tok::annot_typename ) ||
+                             Tok.is( tok::annot_template_id ) )
+                    {
+                        state = 1;
+                        ConsumeAnnotationToken();
+                    }
+                    else
+                    {
+                        bContinue = false;
+                    }
+                }
+                else
+                {
+                    bIsPossible = false;
+                    bContinue = false;
+                }
+                break;
+            case 1:
+                if( Tok.is( tok::less ) )
+                {
+                    iAngleBracketCounter = 1;
+                    ConsumeToken();
+                    state = 2;
+                    break;
+                }
+                //fall through
+            case 3:
+                if( Tok.is( tok::period ) || 
+                    Tok.is( tok::coloncolon ) )
+                {
+                    state = 0;
+                    ConsumeToken();
+                }
+                else if( Tok.is( tok::l_paren ) )
+                {
+                    bIsPossible = true;
+                    bContinue = false;
+                }
+                else
+                {
+                    bContinue = false;
+                }
+                break;
+            case 2:
+                if( Tok.is( tok::less ) )
+                {
+                    ++iAngleBracketCounter;
+                    ConsumeToken();
+                }
+                else if( Tok.is( tok::greater ) )
+                {
+                    --iAngleBracketCounter;
+                    ConsumeToken();
+                    if( 0 == iAngleBracketCounter )
+                    {
+                        state = 3;
+                    }
+                }
+                else
+                {
+                    ConsumeAnyToken();
+                }
+                break;
+            default:
+                break;
+            
+        }
+    }
+    
+    return bIsPossible;
+}
+
+bool Parser::ParsePossibleEGTypePath( CXXScopeSpec &SS,
+                                     ParsedType ObjectType,
+                                     bool EnteringContext,
+                                     bool *MayBePseudoDestructor,
+                                     bool IsTypename,
+                                     IdentifierInfo **LastII,
+                                     bool OnlyNamespace )
+{
+    //look ahead and determine if this is a type sequence 
+    if( clang_eg::eg_isEGEnabled() && !isEGTypePathParsing() && isPossibleEGTypePath() )
+    {
+        if( AnnotateTypePathTemplateIdToken( SS, ObjectType, EnteringContext, true ) )
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+//EG END
+///////////////////////////////////////////////////////////////////////////////
 
 ExprResult Parser::tryParseCXXIdExpression(CXXScopeSpec &SS,
                                            bool isAddressOfOperand,

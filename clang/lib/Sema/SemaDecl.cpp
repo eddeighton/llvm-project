@@ -146,6 +146,9 @@ bool Sema::isSimpleTypeSpecifier(tok::TokenKind Kind) const {
   case tok::kw_wchar_t:
   case tok::kw_bool:
   case tok::kw___underlying_type:
+//EG BEGIN
+  case tok::kw___eg_result_type:
+//EG END
   case tok::kw___auto_type:
     return true;
 
@@ -5814,6 +5817,9 @@ static bool RebuildDeclaratorInCurrentInstantiation(Sema &S, Declarator &D,
   case DeclSpec::TST_typename:
   case DeclSpec::TST_typeofType:
   case DeclSpec::TST_underlyingType:
+//EG BEGIN
+  case DeclSpec::TST_egResultType:
+//EG END
   case DeclSpec::TST_atomic: {
     // Grab the type from the parser.
     TypeSourceInfo *TSI = nullptr;

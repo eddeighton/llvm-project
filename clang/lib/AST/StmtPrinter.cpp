@@ -2280,6 +2280,23 @@ void StmtPrinter::VisitCXXDependentScopeMemberExpr(
     printTemplateArgumentList(OS, Node->template_arguments(), Policy);
 }
 
+//EG BEGIN
+void StmtPrinter::VisitCXXDependentEGInvokeExpr(
+                                         CXXDependentEGInvokeExpr *Node) {
+  if (!Node->isImplicitAccess()) {
+    PrintExpr(Node->getBase());
+    OS << (Node->isArrow() ? "->" : ".");
+  }
+  if (NestedNameSpecifier *Qualifier = Node->getQualifier())
+    Qualifier->print(OS, Policy);
+  if (Node->hasTemplateKeyword())
+    OS << "template ";
+  OS << Node->getMemberNameInfo();
+  if (Node->hasExplicitTemplateArgs())
+    printTemplateArgumentList(OS, Node->template_arguments(), Policy);
+}
+//EG END
+
 void StmtPrinter::VisitUnresolvedMemberExpr(UnresolvedMemberExpr *Node) {
   if (!Node->isImplicitAccess()) {
     PrintExpr(Node->getBase());

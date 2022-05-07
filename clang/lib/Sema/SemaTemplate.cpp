@@ -653,7 +653,18 @@ void Sema::diagnoseExprIntendedAsTemplateName(Scope *S, ExprResult TemplateName,
     NameInfo = DSME->getMemberNameInfo();
     SS.Adopt(DSME->getQualifierLoc());
     MissingTemplateKeyword = true;
-  } else {
+  } 
+
+//EG BEGIN
+  else if (auto *DSME =
+                 dyn_cast<CXXDependentEGInvokeExpr>(TemplateName.get())) {
+    NameInfo = DSME->getMemberNameInfo();
+    SS.Adopt(DSME->getQualifierLoc());
+    MissingTemplateKeyword = true;
+  } 
+//EG END
+
+  else {
     llvm_unreachable("unexpected kind of potential template name");
   }
 
@@ -4997,6 +5008,16 @@ bool Sema::CheckTemplateTypeArgument(TemplateTypeParmDecl *Param,
         NameInfo = ArgExpr->getMemberNameInfo();
       }
     }
+
+//EG BEGIN
+      else if (CXXDependentEGInvokeExpr *ArgExpr =
+               dyn_cast<CXXDependentEGInvokeExpr>(Arg.getAsExpr())) {
+      if (ArgExpr->isImplicitAccess()) {
+        SS.Adopt(ArgExpr->getQualifierLoc());
+        NameInfo = ArgExpr->getMemberNameInfo();
+      }
+    }
+//EG END
 
     if (auto *II = NameInfo.getName().getAsIdentifierInfo()) {
       LookupResult Result(*this, NameInfo, LookupOrdinaryName);

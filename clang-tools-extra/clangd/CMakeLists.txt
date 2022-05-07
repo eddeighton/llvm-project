@@ -160,6 +160,7 @@ clang_target_link_libraries(clangDaemon
   clangToolingCore
   clangToolingInclusions
   clangToolingSyntax
+  clangEG
   )
 
 target_link_libraries(clangDaemon

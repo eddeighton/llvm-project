@@ -32,6 +32,7 @@ clang_target_link_libraries(StaticAnalysisTests
   clangStaticAnalyzerCore
   clangStaticAnalyzerFrontend
   clangTooling
+  clangEG
   )
 
 target_link_libraries(StaticAnalysisTests

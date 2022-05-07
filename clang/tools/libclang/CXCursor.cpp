@@ -594,6 +594,9 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
     break;
 
   case Stmt::CXXDependentScopeMemberExprClass:
+//EG BEGIN
+  case Stmt::CXXDependentEGInvokeExprClass:
+//EG END
   case Stmt::CXXPseudoDestructorExprClass:
   case Stmt::MemberExprClass:
   case Stmt::MSPropertyRefExprClass:

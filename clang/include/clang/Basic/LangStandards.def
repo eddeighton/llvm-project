@@ -161,6 +161,11 @@ LANGSTANDARD(gnucxx2b, "gnu++2b",
              LineComment | CPlusPlus | CPlusPlus11 | CPlusPlus14 | CPlusPlus17 |
              CPlusPlus20 | CPlusPlus2b | Digraphs | HexFloat | GNUMode)
 
+LANGSTANDARD(EG_CXX, "Mega",
+             CXX, "Mega Language C++",
+             LineComment | CPlusPlus | CPlusPlus11 | CPlusPlus14 | CPlusPlus17 |
+             CPlusPlus20 | CPlusPlus2b | Digraphs | HexFloat | GNUMode)
+
 // OpenCL
 LANGSTANDARD(opencl10, "cl1.0",
              OpenCL, "OpenCL 1.0",
@@ -236,6 +241,7 @@ LANGSTANDARD(hlsl2021, "hlsl2021",
 LANGSTANDARD(hlsl202x, "hlsl202x",
              HLSL, "High Level Shader Language 202x",
              LineComment | HLSL | CPlusPlus | CPlusPlus11)
+
 
 
 #undef LANGSTANDARD

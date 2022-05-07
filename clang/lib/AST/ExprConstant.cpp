@@ -15359,6 +15359,9 @@ static ICEDiag CheckICE(const Expr* E, const ASTContext &Ctx) {
   case Expr::CXXTemporaryObjectExprClass:
   case Expr::CXXUnresolvedConstructExprClass:
   case Expr::CXXDependentScopeMemberExprClass:
+//EG BEGIN
+  case Expr::CXXDependentEGInvokeExprClass:
+//EG END
   case Expr::UnresolvedMemberExprClass:
   case Expr::ObjCStringLiteralClass:
   case Expr::ObjCBoxedExprClass:

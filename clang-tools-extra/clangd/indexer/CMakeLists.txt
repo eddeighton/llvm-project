@@ -14,6 +14,7 @@ clang_target_link_libraries(clangd-indexer
   clangIndex
   clangLex
   clangTooling
+  clangEG
 )
 target_link_libraries(clangd-indexer
   PRIVATE

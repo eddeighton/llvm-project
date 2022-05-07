@@ -21,6 +21,7 @@ clang_target_link_libraries(clangChangeNamespace
   clangSerialization
   clangTooling
   clangToolingCore
+  clangEG
   )
 
 add_subdirectory(tool)
