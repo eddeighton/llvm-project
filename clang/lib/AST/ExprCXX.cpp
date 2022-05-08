@@ -1448,34 +1448,33 @@ CXXDependentEGInvokeExpr::CXXDependentEGInvokeExpr( QualType typePathType,
     DeclarationNameInfo MemberNameInfo,
     const TemplateArgumentListInfo *TemplateArgs)
     : Expr(CXXDependentEGInvokeExprClass, C.DependentTy, VK_LValue,
-           OK_Ordinary, true, true, true,
-           ((Base && Base->containsUnexpandedParameterPack()) ||
-            (QualifierLoc &&
-             QualifierLoc.getNestedNameSpecifier()
-                 ->containsUnexpandedParameterPack()) ||
-            MemberNameInfo.containsUnexpandedParameterPack())),
-      Base(Base), BaseType(BaseType), IsArrow(IsArrow),
+           OK_Ordinary),
+      Base(Base), 
+      BaseType(BaseType), 
+      IsArrow(IsArrow),
       HasTemplateKWAndArgsInfo(TemplateArgs != nullptr ||
                                TemplateKWLoc.isValid()),
-      OperatorLoc(OperatorLoc), QualifierLoc(QualifierLoc),
+      OperatorLoc(OperatorLoc), 
+      QualifierLoc(QualifierLoc),
       FirstQualifierFoundInScope(FirstQualifierFoundInScope),
       MemberNameInfo(MemberNameInfo),
       m_pNestedDependentEGInvokeExpr( nullptr ),
       m_pRootCallExpr(nullptr),
-      m_typePathType(typePathType){
+      m_typePathType(typePathType)
+{
   if (TemplateArgs) {
-    bool Dependent = true;
-    bool InstantiationDependent = true;
-    bool ContainsUnexpandedParameterPack = false;
+    auto Deps = TemplateArgumentDependence::None;
     getTrailingObjects<ASTTemplateKWAndArgsInfo>()->initializeFrom(
         TemplateKWLoc, *TemplateArgs, getTrailingObjects<TemplateArgumentLoc>(),
-        Dependent, InstantiationDependent, ContainsUnexpandedParameterPack);
-    if (ContainsUnexpandedParameterPack)
-      ExprBits.ContainsUnexpandedParameterPack = true;
+        Deps);
   } else if (TemplateKWLoc.isValid()) {
     getTrailingObjects<ASTTemplateKWAndArgsInfo>()->initializeFrom(
         TemplateKWLoc);
   }
+
+  //if (hasFirstQualifierFoundInScope())
+  //  *getTrailingObjects<NamedDecl *>() = FirstQualifierFoundInScope;
+  setDependence(computeDependence(this));
 }
 
 CXXDependentEGInvokeExpr *

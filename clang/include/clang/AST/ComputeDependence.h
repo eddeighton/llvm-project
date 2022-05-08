@@ -77,6 +77,7 @@ class CXXDefaultArgExpr;
 class LambdaExpr;
 class CXXUnresolvedConstructExpr;
 class CXXDependentScopeMemberExpr;
+class CXXDependentEGInvokeExpr;
 class MaterializeTemporaryExpr;
 class CXXFoldExpr;
 class TypeTraitExpr;
@@ -166,6 +167,7 @@ ExprDependence computeDependence(LambdaExpr *E,
                                  bool ContainsUnexpandedParameterPack);
 ExprDependence computeDependence(CXXUnresolvedConstructExpr *E);
 ExprDependence computeDependence(CXXDependentScopeMemberExpr *E);
+ExprDependence computeDependence(CXXDependentEGInvokeExpr *E);
 ExprDependence computeDependence(MaterializeTemporaryExpr *E);
 ExprDependence computeDependence(CXXFoldExpr *E);
 ExprDependence computeDependence(TypeTraitExpr *E);

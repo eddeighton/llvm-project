@@ -1442,7 +1442,7 @@ bool Parser::AnnotateTypePathTemplateIdToken( CXXScopeSpec &SS,
     //duplicate the next token
     {
         Token tokenCopy = Tok;
-        PP.EnterToken( tokenCopy );
+        PP.EnterToken( tokenCopy, true );
     }
 
     //then use first duplicate as fake r angle bracket for annotation token
@@ -1472,7 +1472,7 @@ bool Parser::AnnotateTypePathTemplateIdToken( CXXScopeSpec &SS,
     if( TNK == TNK_Type_template && AllowTypeAnnotation )
     {
         TypeResult Type = Actions.ActOnTemplateIdType(
-            SS, TemplateKWLoc, Template, TemplateName.Identifier,
+            getCurScope(), SS, TemplateKWLoc, Template, TemplateName.Identifier,
             TemplateNameLoc, LAngleLoc, TemplateArgsPtr, RAngleLoc );
         if( Type.isInvalid() )
         {
@@ -1510,8 +1510,8 @@ bool Parser::AnnotateTypePathTemplateIdToken( CXXScopeSpec &SS,
         //        : TemplateName.OperatorFunctionId.Operator;
 
         TemplateIdAnnotation *TemplateId = TemplateIdAnnotation::Create(
-          SS, TemplateKWLoc, TemplateNameLoc, TemplateII, OpKind, Template, TNK,
-          LAngleLoc, RAngleLoc, TemplateArgs, TemplateIds);
+          TemplateKWLoc, TemplateNameLoc, TemplateII, OpKind, Template, TNK,
+          LAngleLoc, RAngleLoc, TemplateArgs, false, TemplateIds);
 
         Tok.setAnnotationValue(TemplateId);
         if (TemplateKWLoc.isValid())

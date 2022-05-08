@@ -6035,7 +6035,7 @@ namespace {
     }
     void VisitUnaryTransformTypeLoc(UnaryTransformTypeLoc TL) {
       // FIXME: This holds only because we only have one unary transform.
-      assert(DS.getTypeSpecType() == DeclSpec::TST_underlyingType)
+      assert((DS.getTypeSpecType() == DeclSpec::TST_underlyingType)
 //EG BEGIN
         || ( DS.getTypeSpecType() == DeclSpec::TST_egResultType ));
 //EG END

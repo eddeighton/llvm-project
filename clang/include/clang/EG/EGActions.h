@@ -12,6 +12,7 @@
 #include "clang/Frontend/FrontendAction.h"
 
 #include <memory>
+#include <vector>
 
 namespace clang {
 
@@ -52,7 +53,7 @@ protected:
       
         Consumers.push_back( WrapperFrontendAction::CreateASTConsumer( CI, InFile ) );
         
-        return llvm::make_unique< MultiplexConsumer >( std::move( Consumers ) );
+        return std::make_unique< MultiplexConsumer >( std::move( Consumers ) );
     }
     
     //This is only called if the compilation was successful

@@ -280,12 +280,12 @@ const Stmt *ExprMutationAnalyzer::findDirectMutation(const Expr *Exp) {
           callee(expr(anyOf(unresolvedMemberExpr(hasObjectExpression(
                                 canResolveToExpr(equalsNode(Exp)))),
                             cxxDependentScopeMemberExpr(hasObjectExpression(
-                                canResolveToExpr(equalsNode(Exp))
+                                canResolveToExpr(equalsNode(Exp))))
 //EG BEGIN
-                          ,cxxDependentEGInvokeExpr(
-                              hasObjectExpression(equalsNode(Exp))) 
+//                          ,cxxDependentEGInvokeExpr(
+//                              hasObjectExpression(equalsNode(Exp))) 
 //EG END
-                                )))))),
+                                )))),
       // Match on a call to a known method, but the call itself is type
       // dependent (e.g. `vector<T> v; v.push(T{});` in a templated function).
       callExpr(allOf(isTypeDependent(),
@@ -295,8 +295,8 @@ const Stmt *ExprMutationAnalyzer::findDirectMutation(const Expr *Exp) {
 
 
 //EG BEGIN
-                    ,cxxDependentEGInvokeExpr(
-                         hasObjectExpression(equalsNode(Exp))) 
+//                    ,cxxDependentEGInvokeExpr(
+//                         hasObjectExpression(equalsNode(Exp))) ;
 //EG END
 
 
@@ -344,8 +344,9 @@ const Stmt *ExprMutationAnalyzer::findDirectMutation(const Expr *Exp) {
                hasAnyArgument(canResolveToExpr(equalsNode(Exp)))),
 
 //EG BEGIN
-      callExpr(callee(expr(anyOf(cxxDependentEGInvokeExpr()))),
-               hasAnyArgument(equalsNode(Exp))),
+//      callExpr(callee(expr(
+//              cxxDependentEGInvokeExpr(hasObjectExpression(equalsNode(Exp)))
+//              )), hasAnyArgument(equalsNode(Exp))),
 //EG END
 
       cxxUnresolvedConstructExpr(
@@ -382,7 +383,7 @@ const Stmt *ExprMutationAnalyzer::findDirectMutation(const Expr *Exp) {
   const auto Matches = match(
       traverse(TK_AsIs,
                findAll(stmt(anyOf(AsAssignmentLhs, AsIncDecOperand,
-                                  AsNonConstThis, AsAmpersandOperand,
+                                  AsNonConstThis, //AsAmpersandOperand,
                                   AsPointerFromArrayDecay, AsOperatorArrowThis,
                                   AsNonConstRefArg, AsLambdaRefCaptureInit,
                                   AsNonConstRefReturn, AsNonConstRefRangeInit))

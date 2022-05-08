@@ -191,7 +191,7 @@ CreateFrontendAction(CompilerInstance &CI) {
 //EG BEGIN
   if( !FEOpts.EGDatabasePath.empty() )
   {
-      Act = llvm::make_unique< clang_eg::eg_action >( CI, std::move( Act ) );
+      Act = std::make_unique< clang_eg::eg_action >( CI, std::move( Act ) );
   }
 //EG END
 

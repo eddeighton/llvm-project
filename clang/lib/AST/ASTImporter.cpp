@@ -7856,23 +7856,18 @@ ExpectedStmt ASTNodeImporter::VisitCXXDependentScopeMemberExpr(
       ToMemberNameInfo, ResInfo);
 }
 
-
-//EG BEGIN
+//EG BEGIN - note: copy paste above
 ExpectedStmt ASTNodeImporter::VisitCXXDependentEGInvokeExpr(
     CXXDependentEGInvokeExpr *E) {
-  auto Imp = importSeq(
-      E->getType(), E->getOperatorLoc(), E->getQualifierLoc(),
-      E->getTemplateKeywordLoc(), E->getFirstQualifierFoundInScope());
-  if (!Imp)
-    return Imp.takeError();
-
-  QualType ToType;
-  SourceLocation ToOperatorLoc, ToTemplateKeywordLoc;
-  NestedNameSpecifierLoc ToQualifierLoc;
-  NamedDecl *ToFirstQualifierFoundInScope;
-  std::tie(
-      ToType, ToOperatorLoc, ToQualifierLoc, ToTemplateKeywordLoc,
-      ToFirstQualifierFoundInScope) = *Imp;
+  Error Err = Error::success();
+  auto ToType = importChecked(Err, E->getType());
+  auto ToOperatorLoc = importChecked(Err, E->getOperatorLoc());
+  auto ToQualifierLoc = importChecked(Err, E->getQualifierLoc());
+  auto ToTemplateKeywordLoc = importChecked(Err, E->getTemplateKeywordLoc());
+  auto ToFirstQualifierFoundInScope =
+      importChecked(Err, E->getFirstQualifierFoundInScope());
+  if (Err)
+    return std::move(Err);
 
   Expr *ToBase = nullptr;
   if (!E->isImplicitAccess()) {
@@ -7883,22 +7878,23 @@ ExpectedStmt ASTNodeImporter::VisitCXXDependentEGInvokeExpr(
   }
 
   TemplateArgumentListInfo ToTAInfo, *ResInfo = nullptr;
+
   if (E->hasExplicitTemplateArgs()) {
-    if (Error Err = ImportTemplateArgumentListInfo(
-        E->getLAngleLoc(), E->getRAngleLoc(), E->template_arguments(),
-        ToTAInfo))
+    if (Error Err =
+            ImportTemplateArgumentListInfo(E->getLAngleLoc(), E->getRAngleLoc(),
+                                           E->template_arguments(), ToTAInfo))
       return std::move(Err);
     ResInfo = &ToTAInfo;
   }
+  auto ToMember = importChecked(Err, E->getMember());
+  auto ToMemberLoc = importChecked(Err, E->getMemberLoc());
+  if (Err)
+    return std::move(Err);
+  DeclarationNameInfo ToMemberNameInfo(ToMember, ToMemberLoc);
 
-  auto ToMemberNameInfoOrErr = importSeq(E->getMember(), E->getMemberLoc());
-  if (!ToMemberNameInfoOrErr)
-    return ToMemberNameInfoOrErr.takeError();
-  DeclarationNameInfo ToMemberNameInfo(
-      std::get<0>(*ToMemberNameInfoOrErr), std::get<1>(*ToMemberNameInfoOrErr));
   // Import additional name location/type info.
-  if (Error Err = ImportDeclarationNameLoc(
-      E->getMemberNameInfo(), ToMemberNameInfo))
+  if (Error Err =
+          ImportDeclarationNameLoc(E->getMemberNameInfo(), ToMemberNameInfo))
     return std::move(Err);
 
   return CXXDependentEGInvokeExpr::Create( QualType(),

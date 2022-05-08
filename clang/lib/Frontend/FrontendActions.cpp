@@ -1081,7 +1081,7 @@ void PrintPreambleAction::ExecuteAction() {
   case Language::CUDA:
   case Language::HIP:
 //EG BEGIN
-  case InputKind::EG_CXX:
+  case Language::EG_CXX:
 //EG END
   case Language::HLSL:
     break;

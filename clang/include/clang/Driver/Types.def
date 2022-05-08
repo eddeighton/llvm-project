@@ -56,9 +56,9 @@ TYPE("objective-c++",            ObjCXX,       PP_ObjCXX,       "mm",     phases
 TYPE("renderscript",             RenderScript, PP_C,            "rs",     phases::Preprocess, phases::Compile, phases::Backend, phases::Assemble, phases::Link)
 TYPE("hlsl",                     HLSL,         PP_CXX,          "hlsl",   phases::Preprocess, phases::Compile, phases::Backend)
 //EG BEGIN
-TYPE("eg-cpp-output",            PP_EG_CXX,    INVALID,         "egcppi","u")
-TYPE("eg-cpp",                   EG_CXX,       PP_EG_CXX,       "egcpp", "u")
-TYPE("eg",                       EG,           INVALID,         "eg",    "u")
+TYPE("eg-cpp-output",            PP_EG_CXX,    INVALID,         "egcppi", phases::Preprocess, phases::Compile, phases::Backend, phases::Assemble, phases::Link)
+TYPE("eg-cpp",                   EG_CXX,       PP_EG_CXX,       "egcpp",  phases::Preprocess, phases::Compile, phases::Backend, phases::Assemble, phases::Link)
+TYPE("eg",                       EG,           INVALID,         "eg",     phases::Preprocess, phases::Compile, phases::Backend, phases::Assemble, phases::Link)
 //EG END
 
 // C family input files to precompile.

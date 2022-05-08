@@ -6168,12 +6168,12 @@ static void handleEGTypeAttribute(Sema &S, Decl *D, const ParsedAttr &AL)
     if( EGTypeIDExpr )
     {
         //EGTypeIDExpr get int from the expr
-        llvm::APSInt intValue;
-        if( EGTypeIDExpr->isIntegerConstantExpr( intValue, S.Context ) )
+        if( EGTypeIDExpr->isIntegerConstantExpr( S.Context ) )
         {
+            Optional<llvm::APSInt> optInt = 
+              EGTypeIDExpr->getIntegerConstantExpr( S.Context );
             D->addAttr(::new (S.Context)
-                 EGTypeIDAttr(AL.getRange(), S.Context, intValue.getExtValue(),
-                            AL.getAttributeSpellingListIndex()));
+                 EGTypeIDAttr(S.Context, AL, optInt.getValue().getExtValue()) );
         }
         else
         {

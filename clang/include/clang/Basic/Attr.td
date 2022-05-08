@@ -4001,10 +4001,12 @@ def NoRandomizeLayout : InheritableAttr {
 def : MutualExclusions<[RandomizeLayout, NoRandomizeLayout]>;
 
 //EG BEGIN
+
 def EGTypeID : Attr {
   let Spellings = [Clang<"eg_type", 0>];
   let Subjects = SubjectList<[CXXRecord]>;
   let Args = [IntArgument<"id">];
   let Documentation = [Undocumented];
 }
+
 //EG END

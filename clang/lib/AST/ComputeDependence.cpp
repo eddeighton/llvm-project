@@ -818,6 +818,18 @@ ExprDependence clang::computeDependence(CXXDependentScopeMemberExpr *E) {
   return D;
 }
 
+ExprDependence clang::computeDependence(CXXDependentEGInvokeExpr *E) {
+  auto D = ExprDependence::TypeValueInstantiation;
+  if (!E->isImplicitAccess())
+    D |= E->getBase()->getDependence();
+  if (auto *Q = E->getQualifier())
+    D |= toExprDependence(Q->getDependence());
+  D |= getDependenceInExpr(E->getMemberNameInfo());
+  for (auto A : E->template_arguments())
+    D |= toExprDependence(A.getArgument().getDependence());
+  return D;
+}
+
 ExprDependence clang::computeDependence(MaterializeTemporaryExpr *E) {
   return E->getSubExpr()->getDependence();
 }

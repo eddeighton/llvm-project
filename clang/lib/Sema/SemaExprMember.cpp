@@ -1712,13 +1712,13 @@ ExprResult Sema::ActOnAmbiguousEGInvokeMemberAccessExpr( ParsedType typePathPars
   if (SS.isSet() && SS.isInvalid())
     return ExprError();
 
-    if( !typePathParsedType )
-        return ExprError();
+  if( !typePathParsedType )
+      return ExprError();
 
-    TypeSourceInfo *TInfo;
-    QualType typePathType = GetTypeFromParser( typePathParsedType, &TInfo );
-    if( !TInfo )
-        TInfo = Context.getTrivialTypeSourceInfo( typePathType, SourceLocation() );
+  TypeSourceInfo *TInfo;
+  QualType typePathType = GetTypeFromParser( typePathParsedType, &TInfo );
+  if( !TInfo )
+      TInfo = Context.getTrivialTypeSourceInfo( typePathType, SourceLocation() );
 
   // Warn about the explicit constructor calls Microsoft extension.
   if (getLangOpts().MicrosoftExt &&
@@ -1801,7 +1801,7 @@ int Sema::eg_pushInvokeLocation( SourceLocation loc )
 
 void Sema::eg_popInvokeLocation( int iHandle )
 {
-    assert( eg_invokeLocations.size() == iHandle );
+    assert( static_cast< int >( eg_invokeLocations.size() ) == iHandle );
     eg_invokeLocations.pop_back();
 }
   

@@ -2670,6 +2670,9 @@ static void GenerateFrontendArgs(const FrontendOptions &Opts,
     case Language::HLSL:
       Lang = "hlsl";
       break;
+    case Language::EG_CXX:
+      Lang = "mega";
+      break;
     }
 
     GenerateArg(Args, OPT_x,
@@ -2700,16 +2703,16 @@ static bool ParseFrontendArgs(FrontendOptions &Opts, ArgList &Args,
 
 //EG BEGIN
   //get the eg options
-  Opts.EGPluginDllPath = Args.getLastArgValue( OPT_egdll );
-  Opts.EGDatabasePath = Args.getLastArgValue( OPT_egdb );
-  Opts.EGCXXFile = Args.getLastArgValue( OPT_egcxx );
-  Opts.EGTranslationUnitDatabasePath = Args.getLastArgValue( OPT_egtu );
+  Opts.EGPluginDllPath = Args.getLastArgValue( OPT_egdll ).str();
+  Opts.EGDatabasePath = Args.getLastArgValue( OPT_egdb ).str();
+  Opts.EGCXXFile = Args.getLastArgValue( OPT_egcxx ).str();
+  Opts.EGTranslationUnitDatabasePath = Args.getLastArgValue( OPT_egtu ).str();
   {
-      const std::string strTUID = Args.getLastArgValue( OPT_egtuid );
+      const StringRef strTUID = Args.getLastArgValue( OPT_egtuid );
       if( !strTUID.empty() )
       {
           //check for std::invalid_argument and std::out_of_range here
-        Opts.EGTranslationUnitID = std::stoi( strTUID );
+        Opts.EGTranslationUnitID = std::stoi( strTUID.str() );
       }
   }
 //EG END
@@ -2874,7 +2877,7 @@ static bool ParseFrontendArgs(FrontendOptions &Opts, ArgList &Args,
                 .Case("renderscript", Language::RenderScript)
                 .Case("hlsl", Language::HLSL)
 //EG BEGIN
-                .Case("eg-cpp", InputKind::EG_CXX )
+                .Case("eg-cpp", Language::EG_CXX )
 //EG END
                 .Default(Language::Unknown);
 
@@ -3253,6 +3256,12 @@ static bool IsInputCompatibleWithStandard(InputKind IK,
 
   case Language::HIP:
     return S.getLanguage() == Language::CXX || S.getLanguage() == Language::HIP;
+    
+//EG BEGIN
+  case Language::EG_CXX:
+    return S.getLanguage() == Language::CXX ||
+           S.getLanguage() == Language::EG_CXX;
+//EG END
 
   case Language::Asm:
     // Accept (and ignore) all -std= values.
@@ -3262,6 +3271,7 @@ static bool IsInputCompatibleWithStandard(InputKind IK,
 
   case Language::HLSL:
     return S.getLanguage() == Language::HLSL;
+
   }
 
   llvm_unreachable("unexpected input language");
@@ -3288,6 +3298,10 @@ static StringRef GetInputKindName(InputKind IK) {
     return "RenderScript";
   case Language::HIP:
     return "HIP";
+//EG BEGIN
+  case Language::EG_CXX:
+    return "EG C++";
+//EG END
 
   case Language::Asm:
     return "Asm";

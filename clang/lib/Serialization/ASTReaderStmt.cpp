@@ -1978,10 +1978,10 @@ ASTStmtReader::VisitCXXDependentEGInvokeExpr(CXXDependentEGInvokeExpr *E){
   E->Base = Record.readSubExpr();
   E->BaseType = Record.readType();
   E->IsArrow = Record.readInt();
-  E->OperatorLoc = ReadSourceLocation();
+  E->OperatorLoc = readSourceLocation();
   E->QualifierLoc = Record.readNestedNameSpecifierLoc();
-  E->FirstQualifierFoundInScope = ReadDeclAs<NamedDecl>();
-  ReadDeclarationNameInfo(E->MemberNameInfo);
+  E->FirstQualifierFoundInScope = readDeclAs<NamedDecl>();
+  E->MemberNameInfo = Record.readDeclarationNameInfo();
 }
 //EG END
 

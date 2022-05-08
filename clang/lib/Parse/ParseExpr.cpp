@@ -1139,7 +1139,10 @@ ExprResult Parser::ParseCastExpression(CastParseKind ParseKind,
             if (TryAnnotateTypeOrScopeToken())
               return ExprError();
             if (!Tok.is(tok::identifier))
-              return ParseCastExpression(isUnaryExpression, isAddressOfOperand);
+              return ParseCastExpression(ParseKind, isAddressOfOperand,
+                                        NotCastExpr, isTypeCast,
+                                        isVectorLiteral,
+                                        NotPrimaryExpression);
           }
       }
       else
@@ -2238,7 +2241,7 @@ Parser::ParsePostfixExpressionSuffix(ExprResult LHS) {
 
               if( Tok.is( tok::identifier ) )
               {
-                  TryAnnotateName( false );
+                  TryAnnotateName();
               }
 
               if( Tok.is( tok::annot_template_id ) )
@@ -2252,7 +2255,7 @@ Parser::ParsePostfixExpressionSuffix(ExprResult LHS) {
                   else 
                   {
                       CXXScopeSpec SS;
-                      AnnotateTemplateIdTokenAsType();
+                      AnnotateTemplateIdTokenAsType(SS);
                       if( !Tok.is( tok::annot_typename ) )
                       {
                           LHS = ExprError();
@@ -2265,7 +2268,7 @@ Parser::ParsePostfixExpressionSuffix(ExprResult LHS) {
                   DeclSpec DS( AttrFactory );
                   ParseCXXSimpleTypeSpecifier( DS );
 
-                  Declarator DeclaratorInfo( DS, DeclaratorContext::FunctionalCastContext );
+                  Declarator DeclaratorInfo( DS, DeclaratorContext::FunctionalCast );
                   TypeRep = Actions.ActOnTypeName( getCurScope(), DeclaratorInfo ).get();
               }
           }
@@ -2276,13 +2279,15 @@ Parser::ParsePostfixExpressionSuffix(ExprResult LHS) {
           if (!LHS.isInvalid())
           {
               if (ParseUnqualifiedId(     SS,
+                                          ObjectType,
+                                          LHS.get() && LHS.get()->containsErrors(),
                                           /*EnteringContext=*/false,
                                           /*AllowDestructorName=*/true,
                                           /*AllowConstructorName=*/
                                           getLangOpts().MicrosoftExt &&
                                               SS.isNotEmpty(),
                                           /*AllowDeductionGuide=*/false,
-                                          ObjectType, &TemplateKWLoc, Name )) 
+                                          &TemplateKWLoc, Name )) 
               {
                   (void)Actions.CorrectDelayedTyposInExpr(LHS);
                   LHS = ExprError();
@@ -2312,7 +2317,7 @@ Parser::ParsePostfixExpressionSuffix(ExprResult LHS) {
       {
             if( Tok.is( tok::identifier ) )
             {
-                TryAnnotateName( false );
+                TryAnnotateName();
             }
 
             if( Tok.is( tok::annot_template_id ) )
@@ -2325,7 +2330,7 @@ Parser::ParsePostfixExpressionSuffix(ExprResult LHS) {
                 else
                 {
                     CXXScopeSpec SS;
-                    AnnotateTemplateIdTokenAsType();
+                    AnnotateTemplateIdTokenAsType(SS);
                     if( !Tok.is( tok::annot_typename ) )
                     {
                         LHS = ExprError();
@@ -2340,10 +2345,10 @@ Parser::ParsePostfixExpressionSuffix(ExprResult LHS) {
                 DeclSpec DS( AttrFactory );
                 ParseCXXSimpleTypeSpecifier( DS );
             
-                Declarator DeclaratorInfo( DS, DeclaratorContext::FunctionalCastContext );
+                Declarator DeclaratorInfo( DS, DeclaratorContext::FunctionalCast );
                 ParsedType TypeRep = Actions.ActOnTypeName( getCurScope(), DeclaratorInfo ).get();
                     
-                SourceLocation Loc = Tok.getLocation();
+                //SourceLocation Loc = Tok.getLocation();
 
                 BalancedDelimiterTracker T( *this, tok::l_paren );
                 T.consumeOpen();
@@ -2354,10 +2359,10 @@ Parser::ParsePostfixExpressionSuffix(ExprResult LHS) {
                 if( Tok.isNot( tok::r_paren ) )
                 {
                     if( ParseExpressionList( Exprs, CommaLocs, [ & ]
-                    {
+                    { 
                         QualType PreferredType = Actions.ProduceConstructorSignatureHelp(
-                            getCurScope(), TypeRep.get()->getCanonicalTypeInternal(),
-                            DS.getEndLoc(), Exprs, T.getOpenLocation() );
+                            TypeRep.get()->getCanonicalTypeInternal(),
+                            DS.getEndLoc(), Exprs, T.getOpenLocation(), false );
                         CalledSignatureHelp = true;
                         Actions.CodeCompleteExpression( getCurScope(), PreferredType );
                     } ) )
@@ -2365,8 +2370,8 @@ Parser::ParsePostfixExpressionSuffix(ExprResult LHS) {
                         if( PP.isCodeCompletionReached() && !CalledSignatureHelp )
                         {
                             Actions.ProduceConstructorSignatureHelp(
-                                getCurScope(), TypeRep.get()->getCanonicalTypeInternal(),
-                                DS.getEndLoc(), Exprs, T.getOpenLocation() );
+                                TypeRep.get()->getCanonicalTypeInternal(),
+                                DS.getEndLoc(), Exprs, T.getOpenLocation(), false );
                             CalledSignatureHelp = true;
                         }
                         SkipUntil( tok::r_paren, StopAtSemi );

@@ -665,6 +665,9 @@ void JSONNodeDumper::VisitUnaryTransformType(const UnaryTransformType *UTT) {
   case UnaryTransformType::EnumUnderlyingType:
     JOS.attribute("transformKind", "underlying_type");
     break;
+  case UnaryTransformType::EGResultType:
+    JOS.attribute("transformKind", "eg_result_type");
+    break;
   }
 }
 
