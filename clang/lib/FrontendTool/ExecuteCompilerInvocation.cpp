@@ -189,7 +189,7 @@ CreateFrontendAction(CompilerInstance &CI) {
                                             FEOpts.ASTMergeFiles);
 
 //EG BEGIN
-  if( !FEOpts.EGDatabasePath.empty() )
+  if( !FEOpts.EGMode.empty() )
   {
       Act = std::make_unique< clang_eg::eg_action >( CI, std::move( Act ) );
   }

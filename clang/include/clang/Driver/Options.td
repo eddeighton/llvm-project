@@ -5737,16 +5737,18 @@ def print_dependency_directives_minimized_source : Flag<["-"],
 }
 
 //EG BEGIN
+
 def egdll : Joined<["-"], "egdll=">,
-  HelpText<"EG plugin dll">;
-def egdb : Joined<["-"], "egdb=">,
-  HelpText<"EG database file">;
-def egcxx : Joined<["-"], "egcxx=">,
-  HelpText<"EG to c++ file to generate">;
-def egtu : Joined<["-"], "egtu=">,
-  HelpText<"EG translation unit database file">;
-def egtuid : Joined<["-"], "egtuid=">,
-  HelpText<"EG translation unit id">;
+  HelpText<"Mega plugin dll">;
+def egmode : Joined<["-"], "egmode=">,
+  HelpText<"Mega compilation mode">;
+def egsrddir : Joined<["-"], "egsrddir=">,
+  HelpText<"Mega src dir">;
+def egbuilddir : Joined<["-"], "egbuilddir=">,
+  HelpText<"Mega build dir">;
+def egsource : Joined<["-"], "egsource=">,
+  HelpText<"Mega source file">;
+
 //EG END
 
 defm emit_llvm_uselists : BoolOption<"", "emit-llvm-uselists",

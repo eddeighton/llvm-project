@@ -502,18 +502,18 @@ public:
 //EG BEGIN
   /// EG Plugin DLL File
   std::string EGPluginDllPath;
+  
+  /// EG Mode
+  std::string EGMode;
 
-  /// EG Database File
-  std::string EGDatabasePath;
+  /// EG Src Directory
+  std::string EGSrcDir;
+
+  /// EG Build Directory
+  std::string EGBuildDir;
   
-  /// EG C++ File to generate
-  std::string EGCXXFile;
-  
-  /// EG Translation Unit Database File
-  std::string EGTranslationUnitDatabasePath;
-  
-  /// EG Translation Unit ID
-  unsigned EGTranslationUnitID;
+  /// EG Source File
+  std::string EGSource;
 //EG END
 
 public:

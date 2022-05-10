@@ -2703,18 +2703,11 @@ static bool ParseFrontendArgs(FrontendOptions &Opts, ArgList &Args,
 
 //EG BEGIN
   //get the eg options
-  Opts.EGPluginDllPath = Args.getLastArgValue( OPT_egdll ).str();
-  Opts.EGDatabasePath = Args.getLastArgValue( OPT_egdb ).str();
-  Opts.EGCXXFile = Args.getLastArgValue( OPT_egcxx ).str();
-  Opts.EGTranslationUnitDatabasePath = Args.getLastArgValue( OPT_egtu ).str();
-  {
-      const StringRef strTUID = Args.getLastArgValue( OPT_egtuid );
-      if( !strTUID.empty() )
-      {
-          //check for std::invalid_argument and std::out_of_range here
-        Opts.EGTranslationUnitID = std::stoi( strTUID.str() );
-      }
-  }
+  Opts.EGPluginDllPath  = Args.getLastArgValue( OPT_egdll ).str();
+  Opts.EGMode           = Args.getLastArgValue( OPT_egmode ).str();
+  Opts.EGSrcDir         = Args.getLastArgValue( OPT_egsrddir ).str();
+  Opts.EGBuildDir       = Args.getLastArgValue( OPT_egbuilddir ).str();
+  Opts.EGSource         = Args.getLastArgValue( OPT_egsource ).str();
 //EG END
 
   Opts.ProgramAction = frontend::ParseSyntaxOnly;
