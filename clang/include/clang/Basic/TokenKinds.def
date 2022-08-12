@@ -741,9 +741,10 @@ KEYWORD(link, KEYEG)
 KEYWORD(dim, KEYEG)
 KEYWORD(include, KEYEG)
 KEYWORD(dependency, KEYEG)
-KEYWORD(abstract, KEYEG)
 KEYWORD(interface, KEYEG)
 KEYWORD(table, KEYEG)
+KEYWORD(buffer, KEYEG)
+KEYWORD(meta, KEYEG)
 
 KEYWORD(__eg_result_type, KEYCXX)
 //EG END
