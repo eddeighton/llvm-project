@@ -1450,6 +1450,8 @@ Sema::BuildEgThisInvocationExpr( TypeSourceInfo *TInfo,
 {
     QualType ThisTy = getCurrentThisType();
     SourceLocation Loc = TInfo->getTypeLoc().getBeginLoc();
+    if (ThisTy.isNull())
+      return Diag(Loc, diag::err_invalid_this_use);
     Expr* Base = new ( Context ) CXXThisExpr( Loc, ThisTy, /*isImplicit=*/true );
 
     CXXScopeSpec SS;
