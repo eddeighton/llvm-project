@@ -2348,8 +2348,6 @@ Parser::ParsePostfixExpressionSuffix(ExprResult LHS) {
                 Declarator DeclaratorInfo( DS, DeclaratorContext::FunctionalCast );
                 ParsedType TypeRep = Actions.ActOnTypeName( getCurScope(), DeclaratorInfo ).get();
                     
-                //SourceLocation Loc = Tok.getLocation();
-
                 BalancedDelimiterTracker T( *this, tok::l_paren );
                 T.consumeOpen();
 
@@ -2358,24 +2356,25 @@ Parser::ParsePostfixExpressionSuffix(ExprResult LHS) {
 
                 if( Tok.isNot( tok::r_paren ) )
                 {
-                    if( ParseExpressionList( Exprs, CommaLocs, [ & ]
-                    { 
-                        QualType PreferredType = Actions.ProduceConstructorSignatureHelp(
-                            TypeRep.get()->getCanonicalTypeInternal(),
-                            DS.getEndLoc(), Exprs, T.getOpenLocation(), false );
-                        CalledSignatureHelp = true;
-                        Actions.CodeCompleteExpression( getCurScope(), PreferredType );
-                    } ) )
+                    auto RunSignatureHelp = [&]() {
+                      QualType PreferredType;
+                      if (TypeRep)
+                        PreferredType = Actions.ProduceConstructorSignatureHelp(
+                            TypeRep.get()->getCanonicalTypeInternal(), DS.getEndLoc(), Exprs,
+                            T.getOpenLocation(), /*Braced=*/false);
+                      CalledSignatureHelp = true;
+                      return PreferredType;
+                    };
+
+                    if (ParseExpressionList(Exprs, CommaLocs, [&] {
+                          PreferredType.enterFunctionArgument(Tok.getLocation(),
+                                                              RunSignatureHelp);
+                        })) 
                     {
-                        if( PP.isCodeCompletionReached() && !CalledSignatureHelp )
-                        {
-                            Actions.ProduceConstructorSignatureHelp(
-                                TypeRep.get()->getCanonicalTypeInternal(),
-                                DS.getEndLoc(), Exprs, T.getOpenLocation(), false );
-                            CalledSignatureHelp = true;
-                        }
-                        SkipUntil( tok::r_paren, StopAtSemi );
-                        return ExprError();
+                      if (PP.isCodeCompletionReached() && !CalledSignatureHelp)
+                        RunSignatureHelp();
+                      SkipUntil(tok::r_paren, StopAtSemi);
+                      return ExprError();
                     }
                 }
                 T.consumeClose();
