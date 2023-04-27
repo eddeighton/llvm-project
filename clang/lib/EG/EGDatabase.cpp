@@ -5,6 +5,7 @@
 #include "clang_plugin/clang_plugin.hpp"
 
 #include "clang/AST/Type.h"
+#include "clang/Lex/Preprocessor.h"
 
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/raw_ostream.h"
@@ -170,4 +171,22 @@ bool eg_getInvocationResultType(const SourceLocation &loc,
 }
 
 } // namespace clang_eg
+
+class MegaPragmaHandler : public clang::PragmaHandler
+{
+public:
+    MegaPragmaHandler()
+        : PragmaHandler( "mega" )
+    {
+    }
+    void HandlePragma( Preprocessor& PP, PragmaIntroducer Introducer, Token& PragmaTok )
+    {
+        if( clang_eg::g_eg_plugin_interface ) {
+            clang_eg::g_eg_plugin_interface->onMegaPragma();
+        }
+    }
+};
+
+static PragmaHandlerRegistry::Add< MegaPragmaHandler > Y( "mega", "mega pragma description" );
+
 } // namespace clang
