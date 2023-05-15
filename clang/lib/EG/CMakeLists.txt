@@ -10,6 +10,7 @@ add_clang_library(clangEG
 
   LINK_LIBS
   clangAST
+  clangLex
   #clangAnalysis
   #clangBasic
   #clangEdit
