@@ -1085,11 +1085,22 @@ StmtResult Parser::ParseCompoundStatementBody(bool isStmtExpr) {
     DeclSpec DS(AttrFactory);
     DeclGroupPtrTy Res =
         Actions.FinalizeDeclaratorGroup(getCurScope(), DS, DeclsInGroup);
+    const auto statementLoc = Tok.getLocation();
     StmtResult R = Actions.ActOnDeclStmt(Res, LabelLoc, Tok.getLocation());
 
     ExpectAndConsumeSemi(diag::err_expected_semi_declaration);
+
+//EG BEGIN
+    // prevent dropping bad statement which prevents recognising errors in invocations
     if (R.isUsable())
       Stmts.push_back(R.get());
+    else
+    {
+      Diag( statementLoc, diag::err_mega_generic_error ) << "Invocation statement invalid";
+      return R;
+    }
+//EG END
+
   }
 
   ParsedStmtContext SubStmtCtx =
@@ -1107,6 +1118,7 @@ StmtResult Parser::ParseCompoundStatementBody(bool isStmtExpr) {
       continue;
 
     StmtResult R;
+    const auto statementLoc = Tok.getLocation();
     if (Tok.isNot(tok::kw___extension__)) {
       R = ParseStatementOrDeclaration(Stmts, SubStmtCtx);
     } else {
@@ -1149,8 +1161,16 @@ StmtResult Parser::ParseCompoundStatementBody(bool isStmtExpr) {
       }
     }
 
+//EG BEGIN
+    // prevent dropping bad statement which prevents recognising errors in invocations
     if (R.isUsable())
       Stmts.push_back(R.get());
+    else
+    {
+      Diag( statementLoc, diag::err_mega_generic_error ) << "Invocation statement invalid";
+      return R;
+    }
+//EG END
   }
   // Warn the user that using option `-ffp-eval-method=source` on a
   // 32-bit target and feature `sse` disabled, or using
