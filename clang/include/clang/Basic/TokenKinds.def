@@ -743,6 +743,8 @@ KEYWORD(include, KEYEG)
 KEYWORD(dependency, KEYEG)
 KEYWORD(interface, KEYEG)
 KEYWORD(interupt, KEYEG)
+KEYWORD(component, KEYEG)
+KEYWORD(state, KEYEG)
 
 KEYWORD(__eg_result_type, KEYCXX)
 //EG END
